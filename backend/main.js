@@ -3,11 +3,22 @@ const express = require("express");
 const app = express();
 const sequelize = require("./src/utils/database/connection");
 const AuthRouter = require("./src/modules/authentication/routes/AuthRoute");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./src/utils/swagger");
 
 const db = require("./src/modules");
+const GlobalErrorHandler = require("./src/utils/GlobalErrorHandler");
 
+// used middlewares
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// common api endpoints for the system
 app.use("/api", AuthRouter);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.use(GlobalErrorHandler);
+
 const port = process.env.PORT || 4000;
 
 app.get("/", (req, res) => {
