@@ -8,11 +8,14 @@ Users can create profiles, upload their works, and manage their online portfolio
 ## Link to the GitHub repo
 https://github.com/Amelieumutoni/MISSION-CAPSTONE.git
 
-## Features
+## link to the video
+https://drive.google.com/file/d/19s0CIDRpOvVHkvTgZ9d41xKGJQMh0EHT/view?usp=sharing
+
+## Getting Started
 
 1. **Clone the repository**
 ```bash
-## Getting Started
+
 git clone https://github.com/Amelieumutoni/MISSION-CAPSTONE.git
 
 ## Prerequisites
