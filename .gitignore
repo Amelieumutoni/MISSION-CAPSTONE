@@ -1,0 +1,7 @@
+#backend ingored files
+backend/node_modules
+backend/package-lock.json
+
+#frontend ignored files
+frontend/node_modules
+frontend/package-lock.json
