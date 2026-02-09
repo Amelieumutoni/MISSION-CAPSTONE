@@ -1,0 +1,20 @@
+{
+  "name": "mission-capstone-1",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Amelieumutoni/MISSION-CAPSTONE.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Amelieumutoni/MISSION-CAPSTONE/issues"
+  },
+  "homepage": "https://github.com/Amelieumutoni/MISSION-CAPSTONE#readme",
+  "description": ""
+}

@@ -1,16 +1,78 @@
-# React + Vite
+# Craftolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Description
+CraftTFOLIO is a web-based platform that allows Rwandan designers and artisans to digitally document, showcase, and sell their creative works. 
+The platform aims to provide visibility, easy curation, and direct market connectivity for local creators. 
+Users can create profiles, upload their works, and manage their online portfolio.
 
-Currently, two official plugins are available:
+## Link to the GitHub repo
+https://github.com/Amelieumutoni/MISSION-CAPSTONE.git
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+1. **Clone the repository**
+```bash
+## Getting Started
+git clone https://github.com/Amelieumutoni/MISSION-CAPSTONE.git
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js (v18 or later)
+- npm
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Installation
+
+cd mission-capstone-1
+
+Install dependencies
+
+npm install
+
+Run the project
+
+npm start
+
+Open in browser
+
+Visit http://localhost:3000 to view the app.
+
+## Project Structure
+
+```
+craftfolio/
+├── src/
+│   ├── components/    # Reusable UI components
+│   ├── Pages/         # Page components
+│   ├── App.jsx
+│   └── main.jsx
+├── public/
+└── index.html
+
+
+## DESIGNS
+the following is the link of design created in Figma 
+https://www.figma.com/proto/2kxvAftKtQrBbufLmn9Zpl/MISSION-CAPSTONE-PROJECT-DESIGN?node-id=0-1&t=RhZiwIwuHV7TBq4I-1
+
+## Deployment Plan
+The project will be deployed usingdeployed on Firebase using the following services:
+
+
+The platform uses a Docker-based deployment strategy. This method packages each part (frontend, backend services, and databases) i choose this to ensure they run the same way on the  laptop as they do on a live server.
+
+1. Containerization (Docker)
+Each microservice is bundled with its own environment and dependencies.
+
+2. The Docker Host
+All containers are managed on a Docker Host, which acts as the engine running the entire ecosystem.
+
+The Web API containers communicate internally to handle artisan data, while the Client Apps connect through a central gateway.
+
+3. Database
+SQL Server containers store permanent data like artisan biographies and creative metadata.
+
+Redis will be  used for fast, temporary data storage  to ensure the site remains responsive even with many users.
+
+4. Continuous Deployment (CI/CD)
+Automated Pipeline: When code is updated on GitHub, it automatically triggers a new "build" of the container image.
+
+

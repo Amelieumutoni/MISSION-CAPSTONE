@@ -1,6 +1,5 @@
 import Navbar from "../components/Navbar"
 import Hero from "../components/Hero"
-import SearchSection from "../components/SearchSection"
 import Exhibitions from "../components/Exhibitions"
 import AboutStats from "../components/AboutStats"
 import Features from "../components/Features"
@@ -11,7 +10,6 @@ function LandingPage() {
     <>
       <Navbar />
       <Hero />
-      <SearchSection />
       <Exhibitions />
       <AboutStats />
       <Features />
