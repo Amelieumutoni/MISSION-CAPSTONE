@@ -5,7 +5,7 @@ const sequelize = require("../../../utils/database/connection");
 
 require("dotenv").config();
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
   const t = await sequelize.transaction();
