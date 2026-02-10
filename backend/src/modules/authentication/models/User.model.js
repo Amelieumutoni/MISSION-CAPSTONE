@@ -28,4 +28,17 @@ const User = sequelize.define(
   },
 );
 
+User.associate = (models) => {
+  if (models.Profile) {
+    User.hasOne(models.Profile, { foreignKey: "user_id", as: "profile" });
+  }
+
+  if (models.Artwork) {
+    User.hasMany(models.Artwork, { foreignKey: "author_id", as: "artworks" });
+  } else {
+    console.warn(
+      "Warning: Artwork model not found in models object during User association",
+    );
+  }
+};
 module.exports = User;

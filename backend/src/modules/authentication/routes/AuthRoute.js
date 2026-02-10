@@ -1,7 +1,9 @@
 const AuthRouter = new require("express")();
 const { authGuard } = require("../../../utils/middleware/AuthMiddlware");
-const upload = require("../../../utils/multer");
+const createUploader = require("../../../utils/multer");
+const upload = createUploader({ folder: "profiles" });
 const authController = require("../controller/authController");
+const adminRouter = require("./AdminRoute");
 
 /**
  * @swagger
@@ -28,7 +30,7 @@ const authController = require("../controller/authController");
  *       400:
  *         description: Email already exists
  */
-AuthRouter.post("/auth/register", authController.register);
+AuthRouter.post("/register", authController.register);
 
 /**
  * @swagger
@@ -52,7 +54,7 @@ AuthRouter.post("/auth/register", authController.register);
  *       401:
  *         description: Invalid credentials
  */
-AuthRouter.post("/auth/login", authController.login);
+AuthRouter.post("/login", authController.login);
 
 /**
  * @swagger
@@ -68,7 +70,7 @@ AuthRouter.post("/auth/login", authController.login);
  *       401:
  *         description: Unauthorized
  */
-AuthRouter.get("/auth/me", authGuard(), authController.me);
+AuthRouter.get("/me", authGuard(), authController.me);
 
 /**
  * @swagger
@@ -112,7 +114,7 @@ AuthRouter.get("/auth/me", authGuard(), authController.me);
  *         description: Profile not found
  */
 AuthRouter.patch(
-  "/auth/profile",
+  "/profile",
   authGuard(),
   upload.single("profile_picture"),
   authController.updateProfile,

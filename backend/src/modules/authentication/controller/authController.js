@@ -30,6 +30,7 @@ exports.register = async (req, res) => {
         email,
         password_hash: hashedPassword,
         role: role?.toUpperCase() || "BUYER",
+        status: role?.toUpperCase() === "BUYER" ? "ACTIVE" : "INACTIVE",
       },
       { transaction: t },
     );

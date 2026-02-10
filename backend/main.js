@@ -1,10 +1,11 @@
 require("dotenv").config();
 const express = require("express");
+const path = require("path");
 const app = express();
 const sequelize = require("./src/utils/database/connection");
-const AuthRouter = require("./src/modules/authentication/routes/AuthRoute");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./src/utils/swagger");
+const MainRouter = require("./src/modules/routes");
 
 const db = require("./src/modules");
 const GlobalErrorHandler = require("./src/utils/GlobalErrorHandler");
@@ -12,12 +13,12 @@ const GlobalErrorHandler = require("./src/utils/GlobalErrorHandler");
 // used middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// common api endpoints for the system
-app.use("/api", AuthRouter);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
 app.use(GlobalErrorHandler);
+
+// main api endpoints for the system
+app.use("/api", MainRouter);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/store", express.static(path.join(__dirname, "uploads")));
 
 const port = process.env.PORT || 4000;
 
@@ -30,7 +31,7 @@ async function bootstrap() {
     await sequelize.authenticate();
     console.log("Database connection established successfully.");
 
-    await sequelize.sync({ alter: true });
+    // await sequelize.sync({ alter: true });
     console.log("Database models synced.");
 
     const server = app.listen(port, () => {
