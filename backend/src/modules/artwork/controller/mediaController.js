@@ -1,6 +1,8 @@
 const { Media, Artwork } = require("../../index");
 
-// uploading images for a specific artwork either images or videos
+/**
+ * BULK UPLOAD MEDIA (AUTHOR ONLY – OWN ARTWORK)
+ */
 exports.bulkUploadMedia = async (req, res) => {
   try {
     const { artworkId } = req.params;
@@ -13,7 +15,7 @@ exports.bulkUploadMedia = async (req, res) => {
     const artwork = await Artwork.findOne({
       where: {
         artwork_id: artworkId,
-        author_id: req.user.id,
+        author_id: req.user.user_id,
       },
     });
 
@@ -23,13 +25,13 @@ exports.bulkUploadMedia = async (req, res) => {
         .json({ message: "Artwork not found or access denied" });
     }
 
-    // Reset previous primary media
+    // Reset previous primary
     await Media.update(
       { is_primary: false },
       { where: { artwork_id: artworkId } },
     );
 
-    const mediaPayload = req.files.map((file, index) => ({
+    const payload = req.files.map((file, index) => ({
       artwork_id: artworkId,
       file_path: `/store/artworks/media/${file.filename}`,
       media_type: file.mimetype.startsWith("video") ? "VIDEO" : "IMAGE",
@@ -37,21 +39,22 @@ exports.bulkUploadMedia = async (req, res) => {
         primary_index !== undefined && Number(primary_index) === index,
     }));
 
-    const media = await Media.bulkCreate(mediaPayload);
+    const media = await Media.bulkCreate(payload);
 
     res.status(201).json({
       success: true,
-      message: "Media uploaded successfully",
       count: media.length,
       data: media,
     });
   } catch (err) {
-    console.error("Bulk Upload Media Error:", err);
+    console.error("Bulk upload media error:", err);
     res.status(500).json({ message: "Error uploading media" });
   }
 };
 
-// listing images for a specific artwork either images or videos
+/**
+ * PUBLIC – GET MEDIA BY ARTWORK
+ */
 exports.getArtworkMedia = async (req, res) => {
   try {
     const { artworkId } = req.params;
@@ -71,19 +74,87 @@ exports.getArtworkMedia = async (req, res) => {
       ],
     });
 
-    if (!media.length) {
-      return res
-        .status(404)
-        .json({ message: "No media found for this artwork" });
-    }
-
     res.status(200).json({
       success: true,
       count: media.length,
       data: media,
     });
   } catch (err) {
-    console.error("Get Artwork Media Error:", err);
-    res.status(500).json({ message: "Error fetching artwork media" });
+    console.error("Get artwork media error:", err);
+    res.status(500).json({ message: "Error fetching media" });
+  }
+};
+
+/**
+ * UPDATE MEDIA (SET PRIMARY)
+ */
+exports.setPrimaryMedia = async (req, res) => {
+  try {
+    const { mediaId } = req.params;
+
+    const media = await Media.findByPk(mediaId, {
+      include: {
+        model: Artwork,
+        as: "artwork",
+      },
+    });
+
+    if (!media || media.artwork.author_id !== req.user.user_id) {
+      return res
+        .status(404)
+        .json({ message: "Media not found or access denied" });
+    }
+
+    await Media.update(
+      { is_primary: false },
+      { where: { artwork_id: media.artwork_id } },
+    );
+
+    await media.update({ is_primary: true });
+
+    res.status(200).json({
+      success: true,
+      message: "Primary media updated",
+      data: media,
+    });
+  } catch (err) {
+    console.error("Set primary media error:", err);
+    res.status(500).json({ message: "Error updating primary media" });
+  }
+};
+
+/**
+ * DELETE MEDIA (AUTHOR – OWN | ADMIN)
+ */
+exports.deleteMedia = async (req, res) => {
+  try {
+    const { mediaId } = req.params;
+
+    const media = await Media.findByPk(mediaId, {
+      include: {
+        model: Artwork,
+        as: "artwork",
+      },
+    });
+
+    if (
+      !media ||
+      (req.user.role !== "ADMIN" &&
+        media.artwork.author_id !== req.user.user_id)
+    ) {
+      return res
+        .status(404)
+        .json({ message: "Media not found or access denied" });
+    }
+
+    await media.destroy();
+
+    res.status(200).json({
+      success: true,
+      message: "Media deleted successfully",
+    });
+  } catch (err) {
+    console.error("Delete media error:", err);
+    res.status(500).json({ message: "Error deleting media" });
   }
 };

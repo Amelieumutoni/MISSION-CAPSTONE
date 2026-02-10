@@ -45,6 +45,12 @@ const Artwork = sequelize.define(
 Artwork.associate = (models) => {
   Artwork.belongsTo(models.User, { foreignKey: "author_id", as: "author" });
   Artwork.hasMany(models.Media, { foreignKey: "artwork_id", as: "gallery" });
+  Artwork.belongsToMany(models.Exhibition, {
+    through: "artwork_exhibitions",
+    foreignKey: "artwork_id",
+    otherKey: "exhibition_id",
+    as: "exhibitions",
+  });
 };
 
 module.exports = Artwork;
