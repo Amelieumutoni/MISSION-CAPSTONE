@@ -2,11 +2,11 @@ const { User, Profile, Artwork, Media } = require("../../index");
 
 exports.getArtisanHistory = async (req, res) => {
   try {
-    const { artisanId } = req.params;
+    const { artistId } = req.params;
 
     const artisanData = await User.findOne({
       where: {
-        user_id: artisanId,
+        user_id: artistId,
         role: "AUTHOR",
         status: "ACTIVE",
       },

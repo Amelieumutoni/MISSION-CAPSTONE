@@ -1,8 +1,7 @@
 const { Exhibition, Artwork } = require("../../index");
 
-/**
- * ADMIN – Create Exhibition (Draft)
- */
+// creating an exhibition
+
 exports.createExhibition = async (req, res) => {
   try {
     const { title, description, type, stream_link, start_date, end_date } =
@@ -10,6 +9,10 @@ exports.createExhibition = async (req, res) => {
 
     if (!title || !type) {
       return res.status(400).json({ message: "Title and type are required" });
+    }
+
+    if (!["CLASSIFICATION", "LIVE"].includes(type)) {
+      return res.status(400).json({ message: "Invalid exhibition type" });
     }
 
     if (type === "LIVE") {
@@ -27,6 +30,7 @@ exports.createExhibition = async (req, res) => {
     }
 
     const exhibition = await Exhibition.create({
+      author_id: req.user.id, // IMPORTANT
       title,
       description,
       type,
@@ -34,7 +38,7 @@ exports.createExhibition = async (req, res) => {
       banner_image: req.file ? `/store/exhibitions/${req.file.filename}` : null,
       start_date: start_date || null,
       end_date: end_date || null,
-      is_published: false, // draft by default
+      is_published: false,
     });
 
     res.status(201).json({
@@ -48,9 +52,7 @@ exports.createExhibition = async (req, res) => {
   }
 };
 
-/**
- * ADMIN – Publish / Unpublish Exhibition
- */
+// publishing and unpublishing the exhibition
 exports.toggleVisibility = async (req, res) => {
   try {
     const { exhibitionId } = req.params;
@@ -72,7 +74,6 @@ exports.toggleVisibility = async (req, res) => {
       message: `Exhibition ${
         is_published ? "published" : "unpublished"
       } successfully`,
-      data: exhibition,
     });
   } catch (err) {
     console.error("Toggle exhibition visibility error:", err);
@@ -80,9 +81,7 @@ exports.toggleVisibility = async (req, res) => {
   }
 };
 
-/**
- * ADMIN – Assign Artworks to Exhibition
- */
+// assigning artworks to exhibitions by the artist
 exports.assignArtworks = async (req, res) => {
   try {
     const { exhibitionId } = req.params;
@@ -92,9 +91,17 @@ exports.assignArtworks = async (req, res) => {
       return res.status(400).json({ message: "artworkIds must be an array" });
     }
 
-    const exhibition = await Exhibition.findByPk(exhibitionId);
+    const exhibition = await Exhibition.findOne({
+      where: {
+        exhibition_id: exhibitionId,
+        author_id: req.user.id,
+      },
+    });
+
     if (!exhibition) {
-      return res.status(404).json({ message: "Exhibition not found" });
+      return res
+        .status(404)
+        .json({ message: "Exhibition not found or access denied" });
     }
 
     await exhibition.setArtworks(artworkIds);
@@ -109,9 +116,7 @@ exports.assignArtworks = async (req, res) => {
   }
 };
 
-/**
- * PUBLIC – Get Published Exhibitions
- */
+// getting public exhibitions by public
 exports.getPublicExhibitions = async (req, res) => {
   try {
     const exhibitions = await Exhibition.findAll({
@@ -138,9 +143,7 @@ exports.getPublicExhibitions = async (req, res) => {
   }
 };
 
-/**
- * PUBLIC – Get Single Exhibition
- */
+// Getting an exhibition by id public view
 exports.getExhibitionById = async (req, res) => {
   try {
     const { exhibitionId } = req.params;

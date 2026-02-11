@@ -12,6 +12,39 @@ const uploadMedia = createUploader({
 
 /**
  * @swagger
+ * tags:
+ *   - name: Media
+ *     description: Media upload & management
+ *
+ * components:
+ *   schemas:
+ *     Media:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         url:
+ *           type: string
+ *         is_primary:
+ *           type: boolean
+ *         artworkId:
+ *           type: integer
+ *     ApiResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         message:
+ *           type: string
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ */
+
+/**
+ * @swagger
  * /artworks/{artworkId}/media:
  *   post:
  *     summary: Bulk upload media for an artwork (AUTHOR only)
@@ -24,10 +57,6 @@ const uploadMedia = createUploader({
  *         required: true
  *         schema:
  *           type: integer
- *       - in: formData
- *         name: primary_index
- *         type: integer
- *         description: Index of the primary media (0-based)
  *     requestBody:
  *       required: true
  *       content:
@@ -43,6 +72,12 @@ const uploadMedia = createUploader({
  *     responses:
  *       201:
  *         description: Media uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Media'
  */
 router.post(
   "/artworks/:artworkId/media",
@@ -66,6 +101,12 @@ router.post(
  *     responses:
  *       200:
  *         description: Artwork media list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Media'
  */
 router.get("/artworks/:artworkId/media", mediaController.getArtworkMedia);
 
@@ -86,6 +127,10 @@ router.get("/artworks/:artworkId/media", mediaController.getArtworkMedia);
  *     responses:
  *       200:
  *         description: Primary media updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Media'
  */
 router.patch(
   "/media/:mediaId/primary",
@@ -110,6 +155,10 @@ router.patch(
  *     responses:
  *       200:
  *         description: Media deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  */
 router.delete("/media/:mediaId", authGuard(), mediaController.deleteMedia);
 

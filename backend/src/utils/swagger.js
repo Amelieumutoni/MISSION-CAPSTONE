@@ -1,4 +1,5 @@
 const swaggerJSDoc = require("swagger-jsdoc");
+const dotenv = require("dotenv").config();
 
 const swaggerDefinition = {
   openapi: "3.0.0",
@@ -24,70 +25,6 @@ const swaggerDefinition = {
         scheme: "bearer",
         bearerFormat: "JWT",
         description: "Enter your JWT token in the format: Bearer <token>",
-      },
-    },
-    schemas: {
-      RegisterRequest: {
-        type: "object",
-        required: ["name", "email", "password"],
-        properties: {
-          name: { type: "string", example: "Kezia Umutoni" },
-          email: { type: "string", example: "kezia@artisan.rw" },
-          password: { type: "string", example: "StrongPass123!" },
-          role: {
-            type: "string",
-            enum: ["ADMIN", "AUTHOR", "BUYER"],
-            example: "AUTHOR",
-            description: "AUTHOR is for Artisans, BUYER is for general users",
-          },
-        },
-      },
-      LoginRequest: {
-        type: "object",
-        required: ["email", "password"],
-        properties: {
-          email: { type: "string", example: "kezia@artisan.rw" },
-          password: { type: "string", example: "StrongPass123!" },
-        },
-      },
-      AuthResponse: {
-        type: "object",
-        properties: {
-          message: { type: "string", example: "Login successful" },
-          token: { type: "string" },
-          user: {
-            type: "object",
-            properties: {
-              id: { type: "integer" },
-              name: { type: "string" },
-              email: { type: "string" },
-              role: { type: "string" },
-            },
-          },
-        },
-      },
-      ProfileUpdateRequest: {
-        type: "object",
-        properties: {
-          bio: {
-            type: "string",
-            example: "Master weaver specializing in Agaseke baskets.",
-          },
-          location: { type: "string", example: "Musanze, Northern Province" },
-          specialty: { type: "string", example: "Basketry" },
-          years_experience: { type: "integer", example: 12 },
-          phone_contact: { type: "string", example: "+250780000000" },
-        },
-      },
-      ProfilePictureUpload: {
-        type: "object",
-        properties: {
-          image: {
-            type: "string",
-            format: "binary",
-            description: "Profile image file (jpg, png, jpeg)",
-          },
-        },
       },
     },
   },

@@ -4,23 +4,23 @@ const artisanController = require("../controller/artProfile");
 
 /**
  * @swagger
- * /artisans/{artisanId}:
+ * /artists/{artistId}:
  *   get:
  *     summary: Get artisan public profile and artwork history
  *     description: >
- *       Returns an artisan's public profile information along with all their artworks
+ *       Returns an artist's public profile information along with all their artworks
  *       and associated gallery media. This endpoint is public and does not require authentication.
- *     tags: [Public Artisans]
+ *     tags: [Public Artists]
  *     parameters:
  *       - in: path
- *         name: artisanId
+ *         name: artistId
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID of the artisan (AUTHOR role)
+ *         description: ID of the artists (AUTHOR role)
  *     responses:
  *       200:
- *         description: Artisan profile and artwork history retrieved successfully
+ *         description: Artists profile and artwork history retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -31,10 +31,10 @@ const artisanController = require("../controller/artProfile");
  *                 data:
  *                   type: object
  *       404:
- *         description: Artisan not found
+ *         description: Artists not found
  *       500:
  *         description: Internal server error
  */
-router.get("/artisans/:artisanId", artisanController.getArtisanHistory);
+router.get("/:artistId", artisanController.getArtisanHistory);
 
 module.exports = router;

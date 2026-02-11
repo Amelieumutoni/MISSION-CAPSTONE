@@ -2,14 +2,79 @@ const express = require("express");
 const router = express.Router();
 
 const artworkController = require("../controller/artworksController");
+const mediaController = require("../controller/mediaController");
 const { authGuard } = require("../../../utils/middleware/AuthMiddlware");
 const createUploader = require("../../../utils/multer");
-const upload = createUploader({ folder: "artworks" });
+
+const uploadArtwork = createUploader({ folder: "artworks" });
+const uploadMedia = createUploader({
+  folder: "artworks/media",
+  multiple: true,
+});
+
 /**
  * @swagger
  * tags:
- *   name: Artworks
- *   description: Artwork management (Author & Public access)
+ *   - name: Artworks
+ *     description: Artwork management (Author & Public access)
+ *   - name: Media
+ *     description: Media upload & management
+ *
+ * components:
+ *   schemas:
+ *     Artwork:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         title:
+ *           type: string
+ *         description:
+ *           type: string
+ *         technique:
+ *           type: string
+ *         materials:
+ *           type: string
+ *         dimensions:
+ *           type: string
+ *         creation_year:
+ *           type: integer
+ *         price:
+ *           type: number
+ *         stock_quantity:
+ *           type: integer
+ *         main_image:
+ *           type: string
+ *           format: binary
+ *     Media:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         url:
+ *           type: string
+ *         is_primary:
+ *           type: boolean
+ *         artworkId:
+ *           type: integer
+ *     ApiResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         message:
+ *           type: string
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ */
+
+/**
+ * ---------------------------
+ * Artwork Routes
+ * ---------------------------
  */
 
 /**
@@ -64,7 +129,7 @@ const upload = createUploader({ folder: "artworks" });
 router.post(
   "/",
   authGuard("AUTHOR"),
-  upload.single("main_image"),
+  uploadArtwork.single("main_image"),
   artworkController.createArtwork,
 );
 
@@ -164,7 +229,7 @@ router.get("/:artworkId", artworkController.getArtworkById);
 router.patch(
   "/:artworkId",
   authGuard("AUTHOR"),
-  upload.single("main_image"),
+  uploadArtwork.single("main_image"),
   artworkController.updateArtwork,
 );
 
@@ -193,5 +258,130 @@ router.patch(
   authGuard("AUTHOR"),
   artworkController.archiveArtwork,
 );
+
+/**
+ * ---------------------------
+ * Media Routes (nested under artworks)
+ * ---------------------------
+ */
+
+/**
+ * @swagger
+ * /artworks/{artworkId}/media:
+ *   post:
+ *     summary: Bulk upload media for an artwork (AUTHOR only)
+ *     tags: [Media]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: artworkId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               media:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       201:
+ *         description: Media uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Media'
+ */
+router.post(
+  "/:artworkId/media",
+  authGuard("AUTHOR"),
+  uploadMedia.array("media", 10),
+  mediaController.bulkUploadMedia,
+);
+
+/**
+ * @swagger
+ * /artworks/{artworkId}/media:
+ *   get:
+ *     summary: Get all media for an artwork (PUBLIC)
+ *     tags: [Media]
+ *     parameters:
+ *       - in: path
+ *         name: artworkId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Artwork media list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Media'
+ */
+router.get("/:artworkId/media", mediaController.getArtworkMedia);
+
+/**
+ * @swagger
+ * /media/{mediaId}/primary:
+ *   patch:
+ *     summary: Set a media as primary (AUTHOR only)
+ *     tags: [Media]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: mediaId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Primary media updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Media'
+ */
+router.patch(
+  "/media/:mediaId/primary",
+  authGuard("AUTHOR"),
+  mediaController.setPrimaryMedia,
+);
+
+/**
+ * @swagger
+ * /media/{mediaId}:
+ *   delete:
+ *     summary: Delete media (AUTHOR own or ADMIN)
+ *     tags: [Media]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: mediaId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Media deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ */
+router.delete("/media/:mediaId", authGuard(), mediaController.deleteMedia);
 
 module.exports = router;
