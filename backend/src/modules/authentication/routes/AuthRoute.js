@@ -88,9 +88,7 @@ const adminRouter = require("./AdminRoute");
  *           type: string
  */
 
-/* ======================================================
-   AUTH ROUTES
-   ====================================================== */
+// register
 
 /**
  * @swagger

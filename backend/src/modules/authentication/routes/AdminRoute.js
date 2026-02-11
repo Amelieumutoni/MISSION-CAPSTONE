@@ -13,7 +13,7 @@ const { authGuard } = require("../../../utils/middleware/AuthMiddlware");
 
 /**
  * @swagger
- * /admin/artists:
+ * /auth/admin/artists:
  *   get:
  *     summary: Get all users with their profiles (Admin only)
  *     tags: [Admin]
@@ -71,7 +71,7 @@ router.get("/artists", authGuard("ADMIN"), adminController.getAllArtists);
 
 /**
  * @swagger
- * /admin/artists/{userId}/status:
+ * /auth/admin/artists/{userId}/status:
  *   patch:
  *     summary: Update artist account status (Admin only)
  *     tags: [Admin]
@@ -136,7 +136,7 @@ router.patch(
 
 /**
  * @swagger
- * /admin/{artworkId}/archive:
+ * /auth/admin/{artworkId}/archive:
  *   patch:
  *     summary: Archive an artwork (Admin endpoint)
  *     tags: [Admin]
