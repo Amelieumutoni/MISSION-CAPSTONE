@@ -334,7 +334,7 @@ router.get("/:artworkId/media", mediaController.getArtworkMedia);
 
 /**
  * @swagger
- * /media/{mediaId}/primary:
+ * /artworks/media/{mediaId}/primary:
  *   patch:
  *     summary: Set a media as primary (AUTHOR only)
  *     tags: [Media]
@@ -362,7 +362,7 @@ router.patch(
 
 /**
  * @swagger
- * /media/{mediaId}:
+ * /artworks/media/{mediaId}:
  *   delete:
  *     summary: Delete media (AUTHOR own or ADMIN)
  *     tags: [Media]

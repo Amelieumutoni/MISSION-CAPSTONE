@@ -15,7 +15,7 @@ exports.bulkUploadMedia = async (req, res) => {
     const artwork = await Artwork.findOne({
       where: {
         artwork_id: artworkId,
-        author_id: req.user.user_id,
+        author_id: req.user.id,
       },
     });
 
@@ -99,7 +99,7 @@ exports.setPrimaryMedia = async (req, res) => {
       },
     });
 
-    if (!media || media.artwork.author_id !== req.user.user_id) {
+    if (!media || media.artwork.author_id !== req.user.id) {
       return res
         .status(404)
         .json({ message: "Media not found or access denied" });
@@ -139,8 +139,7 @@ exports.deleteMedia = async (req, res) => {
 
     if (
       !media ||
-      (req.user.role !== "ADMIN" &&
-        media.artwork.author_id !== req.user.user_id)
+      (req.user.role !== "ADMIN" && media.artwork.author_id !== req.user.id)
     ) {
       return res
         .status(404)

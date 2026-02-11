@@ -1,4 +1,6 @@
-const AuthRouter = new require("express")();
+const express = require("express");
+const AuthRouter = express.Router();
+
 const { authGuard } = require("../../../utils/middleware/AuthMiddlware");
 const createUploader = require("../../../utils/multer");
 const upload = createUploader({ folder: "profiles" });
@@ -8,9 +10,87 @@ const adminRouter = require("./AdminRoute");
 /**
  * @swagger
  * tags:
- *   name: Auth
- *   description: Authentication and user management
+ *   - name: Auth
+ *     description: Authentication and user management
+ *
+ * components:
+ *   schemas:
+ *     RegisterRequest:
+ *       type: object
+ *       required:
+ *         - name
+ *         - email
+ *         - password
+ *       properties:
+ *         name:
+ *           type: string
+ *         email:
+ *           type: string
+ *           format: email
+ *         password:
+ *           type: string
+ *           format: password
+ *     LoginRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *         password:
+ *           type: string
+ *           format: password
+ *     AuthResponse:
+ *       type: object
+ *       properties:
+ *         token:
+ *           type: string
+ *         user:
+ *           type: object
+ *           properties:
+ *             id:
+ *               type: string
+ *             name:
+ *               type: string
+ *             email:
+ *               type: string
+ *             role:
+ *               type: string
+ *     Profile:
+ *       type: object
+ *       properties:
+ *         bio:
+ *           type: string
+ *         location:
+ *           type: string
+ *         specialty:
+ *           type: string
+ *         years_experience:
+ *           type: integer
+ *         phone_contact:
+ *           type: string
+ *         profile_picture:
+ *           type: string
+ *           format: uri
+ *     ApiResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         message:
+ *           type: string
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
  */
+
+/* ======================================================
+   AUTH ROUTES
+   ====================================================== */
 
 /**
  * @swagger
@@ -27,8 +107,18 @@ const adminRouter = require("./AdminRoute");
  *     responses:
  *       201:
  *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
  *       400:
  *         description: Email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
  */
 AuthRouter.post("/register", authController.register);
 
@@ -53,6 +143,12 @@ AuthRouter.post("/register", authController.register);
  *               $ref: '#/components/schemas/AuthResponse'
  *       401:
  *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
  */
 AuthRouter.post("/login", authController.login);
 
@@ -67,8 +163,16 @@ AuthRouter.post("/login", authController.login);
  *     responses:
  *       200:
  *         description: Authenticated user data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 AuthRouter.get("/me", authGuard(), authController.me);
 
@@ -89,29 +193,38 @@ AuthRouter.get("/me", authGuard(), authController.me);
  *             properties:
  *               bio:
  *                 type: string
- *                 example: "Senior backend developer"
  *               location:
  *                 type: string
- *                 example: "Kigali, Rwanda"
  *               specialty:
  *                 type: string
- *                 example: "Node.js / PostgreSQL"
  *               years_experience:
  *                 type: integer
- *                 example: 5
  *               phone_contact:
  *                 type: string
- *                 example: "+250788000000"
  *               profile_picture:
  *                 type: string
  *                 format: binary
  *     responses:
  *       200:
  *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Profile'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Profile not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
  */
 AuthRouter.patch(
   "/profile",
@@ -119,5 +232,7 @@ AuthRouter.patch(
   upload.single("profile_picture"),
   authController.updateProfile,
 );
+
+AuthRouter.use("/admin", authGuard("ADMIN"), adminRouter);
 
 module.exports = AuthRouter;
