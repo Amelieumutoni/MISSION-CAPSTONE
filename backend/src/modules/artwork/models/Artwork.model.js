@@ -51,6 +51,13 @@ Artwork.associate = (models) => {
     otherKey: "exhibition_id",
     as: "exhibitions",
   });
+
+  if (models.OrderItem) {
+    Artwork.hasMany(models.OrderItem, {
+      foreignKey: "artwork_id",
+      as: "order_entries",
+    });
+  }
 };
 
 module.exports = Artwork;

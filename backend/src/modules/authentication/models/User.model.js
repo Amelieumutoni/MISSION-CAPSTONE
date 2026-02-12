@@ -35,6 +35,9 @@ User.associate = (models) => {
 
   if (models.Artwork) {
     User.hasMany(models.Artwork, { foreignKey: "author_id", as: "artworks" });
+  }
+  if (models.Order) {
+    User.hasMany(models.Order, { foreignKey: "buyer_id", as: "orders" });
   } else {
     console.warn(
       "Warning: Artwork model not found in models object during User association",

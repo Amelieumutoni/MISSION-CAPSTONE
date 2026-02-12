@@ -6,10 +6,13 @@ const AuthRouter = require("../modules/authentication/routes/AuthRoute");
 const ArtworksRouter = require("../modules/artwork/routes/ArtworksRoute");
 const ExhibitionRoute = require("../modules/exhibition/routes/ExhibitionRoute"); // Import it here
 const ArtRoute = require("../modules/authentication/routes/ArtRoute");
+const OrdersRoute = require("../modules/commerce/routes/OrdersRoute");
+const WebhookRoute = require("../modules/commerce/routes/WebhookRoute");
 
 app.use("/auth", AuthRouter);
 app.use("/artworks", ArtworksRouter);
 app.use("/exhibitions", ExhibitionRoute);
 app.use("/artists", ArtRoute);
+app.use("/orders", OrdersRoute);
 
 module.exports = app;
