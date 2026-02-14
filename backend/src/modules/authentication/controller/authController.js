@@ -11,7 +11,7 @@ exports.register = async (req, res) => {
   const t = await sequelize.transaction();
 
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, ...rest } = req.body;
 
     // 1. Check if user exists
     const existingUser = await User.findOne({ where: { email } });
@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
     await Profile.create(
       {
         user_id: user.user_id,
-        bio: `Welcome to my profile! I am ${name}.`,
+        rest,
       },
       { transaction: t },
     );
