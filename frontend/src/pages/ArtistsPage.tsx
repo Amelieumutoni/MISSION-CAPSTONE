@@ -1,14 +1,9 @@
 import { Link } from "react-router";
-import Footer from "@/components/layout/Footer";
-import { Navbar } from "@/components/layout/Navigation";
 import { ARTISTS } from "@/utils/consts";
 
 export default function ArtistsPage() {
   return (
-    <main className="bg-white min-h-screen">
-      <Navbar />
-
-      {/* MINIMALIST HEADER */}
+    <>
       <header className="px-8 md:px-16 pt-48 pb-12">
         <div className="max-w-screen-2xl mx-auto">
           <h2 className="text-[10px] uppercase tracking-[0.5em] text-slate-400 mb-6 font-bold">
@@ -84,28 +79,6 @@ export default function ArtistsPage() {
           })}
         </div>
       </section>
-
-      {/* NEWSLETTER / CTA SECTION */}
-      <section className="px-8 md:px-16 py-32 bg-slate-50 text-center">
-        <h4 className="text-[10px] uppercase tracking-[0.5em] text-slate-400 mb-8 font-bold">
-          Stay Informed
-        </h4>
-        <h2 className="text-4xl md:text-5xl font-serif mb-12 tracking-tight">
-          New artist releases, weekly.
-        </h2>
-        <div className="max-w-md mx-auto flex border-b border-slate-300 pb-2">
-          <input
-            type="email"
-            placeholder="Email Address"
-            className="bg-transparent flex-1 outline-none text-sm font-light uppercase tracking-widest"
-          />
-          <button className="text-[10px] font-black uppercase tracking-widest px-4">
-            Subscribe
-          </button>
-        </div>
-      </section>
-
-      <Footer />
-    </main>
+    </>
   );
 }

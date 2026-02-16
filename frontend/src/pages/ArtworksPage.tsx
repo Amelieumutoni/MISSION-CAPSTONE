@@ -1,15 +1,10 @@
 import { Link } from "react-router";
 import { ALL_ARTWORKS } from "@/utils/consts";
-import { Navbar } from "@/components/layout/Navigation";
-import Footer from "@/components/layout/Footer";
 import { Filter, Grid3X3, Maximize2 } from "lucide-react";
 
 export default function ArtworksPage() {
   return (
-    <main className="bg-white min-h-screen">
-      <Navbar />
-
-      {/* FILTER HEADER */}
+    <>
       <header className="px-8 md:px-16 pt-44 pb-12 border-b border-slate-50">
         <div className="flex flex-col md:flex-row justify-between items-end gap-8">
           <div>
@@ -77,8 +72,6 @@ export default function ArtworksPage() {
           ))}
         </div>
       </section>
-
-      <Footer />
-    </main>
+    </>
   );
 }

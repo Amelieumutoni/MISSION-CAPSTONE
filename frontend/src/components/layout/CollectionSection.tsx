@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 
 export default function CollectionsSection() {
   return (
-    <section className="px-8 pt-24  bg-white">
+    <section className="px-8 py-24  bg-white">
       <div className="mb-20 text-center">
         <h3 className="text-[10px] uppercase tracking-[0.5em] text-slate-400 mb-3 font-bold">
           Curated By Experts

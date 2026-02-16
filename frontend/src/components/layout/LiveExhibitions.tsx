@@ -8,7 +8,7 @@ export default function LiveExhibitsSection() {
         <div className="flex items-center gap-4">
           <div className="w-12 h-px bg-slate-300" />
           <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-500">
-            Live Streaming Now
+            Exhibitions
           </h3>
         </div>
         <div className="flex items-center gap-2">

@@ -24,7 +24,7 @@ apiClient.interceptors.response.use(
     if (status === 401) {
       // Unauthorized: Clear session and redirect to login
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      localStorage.removeItem("user_data");
     } else if (status === 403) {
       toast.error("Forbidden", {
         description: "You don't have permission for this.",

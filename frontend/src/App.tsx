@@ -11,39 +11,49 @@ import ArtistDetailPage from "./pages/ArtistsDetailsPage";
 import ExhibitionsPage from "./pages/ExhibitionsPage";
 import ArtworksPage from "./pages/ArtworksPage";
 import ArtworkDetailPage from "./pages/ArtworkDetailPage";
+import AdminDashboard from "./pages/dashboard/DashboardPage";
+import ProfilePage from "./pages/dashboard/ProfilePage";
+import ShopPage from "./pages/ShopPage";
+import { CartProvider } from "./context/CartContext";
+import Layout from "./pages/HomePage";
+import Index from "./pages/Index";
 
+// App.tsx
 export default function App() {
   return (
     <Router>
-      <Routes>
-        {/* --- Public Routes --- */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/unauthorized" element={<UnauthorizedPage />} />
-        <Route path="/exhibitions" element={<ExhibitionsPage />} />
-        <Route path="/artists" element={<ArtistsPage />} />
-        <Route path="/artists/:id" element={<ArtistDetailPage />} />
-        <Route path="/collections" element={<CollectionsPage />} />
-        <Route path="/artworks" element={<ArtworksPage />} />
-        <Route path="/artwork/:id" element={<ArtworkDetailPage />} />
-        {/* --- Protected Artisan/Admin Section --- */}
-        <Route element={<ProtectedRoute allowedRoles={["AUTHOR", "ADMIN"]} />}>
+      <CartProvider>
+        <Routes>
+          {/* Main Layout Wrap */}
+          <Route element={<Layout />}>
+            {/* Public Routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/exhibitions" element={<ExhibitionsPage />} />
+            <Route path="/artists" element={<ArtistsPage />} />
+            <Route path="/artists/:id" element={<ArtistDetailPage />} />
+            <Route path="/collections" element={<CollectionsPage />} />
+            <Route path="/artworks" element={<ArtworksPage />} />
+            <Route path="/artwork/:id" element={<ArtworkDetailPage />} />
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          </Route>
+
+          {/* Auth Routes (Usually no Navbar/Footer here) */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Protected Dashboard Section */}
           <Route
-            path="/dashboard"
-            element={
-              <div className="p-8 font-serif">
-                <h1 className="text-2xl font-bold">Welcome Eric, here it is</h1>
-                <p className="text-slate-500 uppercase tracking-widest text-xs mt-2">
-                  Artisan Management Console
-                </p>
-              </div>
-            }
-          />
-        </Route>
-        {/* --- Fallback --- */}
-        <Route path="*" element={<NotFoundPage />} />{" "}
-      </Routes>
+            element={<ProtectedRoute allowedRoles={["AUTHOR", "ADMIN"]} />}
+          >
+            <Route path="/dashboard" element={<AdminDashboard />}>
+              <Route path="profile" element={<ProfilePage />} />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </CartProvider>
     </Router>
   );
 }

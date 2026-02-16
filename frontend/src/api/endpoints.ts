@@ -4,8 +4,8 @@ export const ENDPOINTS = {
     REGISTER: "/auth/register",
     ME: "/auth/me",
   },
-  ARTISANS: {
-    PROFILE: "/artisans/profile",
+  ARTIST: {
+    PROFILE: "/auth/profile",
     EXHIBITIONS: "/artisans/exhibitions",
   },
 };

@@ -1,3 +1,5 @@
+import { Database, Globe, Layers, LayoutDashboard, Video } from "lucide-react";
+
 export const TRENDING_WORKS = [
   {
     id: 1,
@@ -348,3 +350,54 @@ export const ALL_ARTWORKS = ARTISTS.flatMap((artist) =>
     artistName: artist.name,
   })),
 );
+
+export const NAVIGATION_CONFIG = [
+  {
+    group: "Strategy",
+    roles: ["ADMIN", "editor"],
+    items: [
+      {
+        id: "overview",
+        label: "Overview",
+        icon: LayoutDashboard,
+        path: "/",
+        roles: ["ADMIN", "editor"],
+      },
+      {
+        id: "live",
+        label: "Live Transmissions",
+        icon: Video,
+        badge: "2",
+        path: "/live",
+        roles: ["ADMIN"],
+      },
+      {
+        id: "class",
+        label: "Classifications",
+        icon: Layers,
+        path: "/classifications",
+        roles: ["ADMIN", "editor"],
+      },
+    ],
+  },
+  {
+    group: "Curation",
+    roles: ["ADMIN", "editor"],
+    items: [
+      {
+        id: "vault",
+        label: "Asset Vault",
+        icon: Database,
+        path: "/vault",
+        roles: ["ADMIN"],
+      },
+      {
+        id: "heritage",
+        label: "Heritage Sites",
+        icon: Globe,
+        path: "/heritage",
+        roles: ["ADMIN", "editor"],
+      },
+    ],
+  },
+];

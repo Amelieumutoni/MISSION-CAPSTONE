@@ -1,3 +1,4 @@
+import { useAuth } from "@/hooks/useAuth";
 import { Navigate, Outlet } from "react-router";
 
 interface ProtectedRouteProps {
@@ -5,30 +6,17 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const token = localStorage.getItem("token");
-  const userStr = localStorage.getItem("user_data");
+  const { user, loading } = useAuth();
 
-  // Basic check: is the data even there?
-  if (!token || !userStr) {
+  if (loading) {
+    return null; // Or a loading spinner/skeleton
+  }
+
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  let user: { role: "AUTHOR" | "BUYER" | "ADMIN" } | null = null;
-  let isCorrupted = false;
-
-  try {
-    user = JSON.parse(userStr);
-  } catch {
-    isCorrupted = true;
-    localStorage.clear();
-  }
-
-  if (isCorrupted) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Authorization Check
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
   }
 

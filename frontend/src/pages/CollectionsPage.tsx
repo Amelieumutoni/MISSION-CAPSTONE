@@ -1,5 +1,3 @@
-import Footer from "@/components/layout/Footer";
-import { Navbar } from "@/components/layout/Navigation";
 import { EXHIBITIONS } from "@/utils/consts";
 import { ArrowRight, Grid3X3 } from "lucide-react";
 
@@ -7,10 +5,7 @@ export default function CollectionsPage() {
   const collections = EXHIBITIONS.filter((ex) => ex.type === "CLASSIFICATION");
 
   return (
-    <main className="bg-white min-h-screen">
-      <Navbar />
-
-      {/* Header Section */}
+    <>
       <header className="px-8 md:px-16 pt-44 pb-20 border-b border-slate-50">
         <div className="max-w-4xl">
           <h1 className="text-7xl md:text-9xl font-serif mb-10 tracking-tighter leading-[0.9]">
@@ -66,8 +61,6 @@ export default function CollectionsPage() {
           ))}
         </div>
       </section>
-
-      <Footer />
-    </main>
+    </>
   );
 }

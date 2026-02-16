@@ -34,6 +34,20 @@ const AuthService = {
     return response.data;
   },
 
+  async updateProfile(formData: FormData) {
+    const response = await apiClient.patch(ENDPOINTS.ARTIST.PROFILE, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (response.data.user) {
+      localStorage.setItem("user_data", JSON.stringify(response.data.user));
+    }
+
+    return response.data;
+  },
+
   logout() {
     localStorage.removeItem("token");
     window.location.href = "/login";
