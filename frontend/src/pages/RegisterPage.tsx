@@ -124,6 +124,28 @@ export default function RegisterPage() {
             </p>
           </div>
 
+          <div className="mb-12">
+            <a
+              href="/"
+              className="text-sm flex items-center gap-x-4 font-bold text-slate-700 hover:text-slate-900 hover:underline hover:decoration-slate-900"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4 inline-block ml-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              Back to Home
+            </a>
+          </div>
           <Card className="border-slate-200 shadow-none rounded-none">
             <CardHeader>
               <CardTitle className="font-serif">

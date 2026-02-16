@@ -67,7 +67,9 @@ const { authGuard } = require("../../../utils/middleware/AuthMiddlware");
  *       403:
  *         description: Forbidden (Admin only)
  */
-router.get("/artists", authGuard("ADMIN"), adminController.getAllArtists);
+router.get("/artists", adminController.getAllArtists);
+
+router.get("/users", authGuard("ADMIN"), adminController.getAllUsers);
 
 /**
  * @swagger

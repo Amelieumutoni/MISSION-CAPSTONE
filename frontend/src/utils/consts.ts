@@ -1,5 +1,196 @@
-import { Database, Globe, Layers, LayoutDashboard, Video } from "lucide-react";
+import {
+  LayoutDashboard,
+  User,
+  Image as ImageIcon,
+  PlusSquare,
+  Folder,
+  GalleryThumbnails,
+  Plus,
+  List,
+  Eye,
+  Users,
+  UserCheck,
+  UserCog,
+  ShoppingCart,
+  Archive,
+  Receipt,
+  ArchiveIcon,
+  ListCollapse,
+} from "lucide-react";
 
+export const NAVIGATION_CONFIG = [
+  {
+    group: "Dashboard",
+    roles: ["ADMIN", "AUTHOR"],
+    items: [
+      {
+        id: "overview",
+        label: "Overview",
+        icon: LayoutDashboard,
+        path: "/dashboard",
+        roles: ["ADMIN", "AUTHOR"],
+      },
+      {
+        id: "profile",
+        label: "My Profile",
+        icon: User,
+        path: "/dashboard/profile",
+        roles: ["AUTHOR"],
+      },
+    ],
+  },
+  {
+    group: "Portfolio",
+    roles: ["AUTHOR"],
+    items: [
+      {
+        id: "artworks",
+        label: "My Artworks",
+        icon: ImageIcon,
+        path: "/dashboard/artworks",
+        roles: ["AUTHOR"],
+      },
+      {
+        id: "new-artwork",
+        label: "Add New Artwork",
+        icon: PlusSquare,
+        path: "/dashboard/artworks/new",
+        roles: ["AUTHOR"],
+        variant: "outline",
+      },
+      {
+        id: "collections",
+        label: "Collections",
+        icon: Folder,
+        path: "/dashboard/collections",
+        roles: ["AUTHOR"],
+        disabled: true,
+      },
+    ],
+  },
+  {
+    group: "Artworks",
+    roles: ["ADMIN"],
+    items: [
+      {
+        id: "artworks",
+        label: "Artworks",
+        icon: ListCollapse,
+        path: "/dashboard/artworks",
+        roles: ["ADMIN"],
+      },
+      {
+        id: "artwork",
+        label: "Archieve Artwork",
+        icon: ArchiveIcon,
+        path: "/dashboard/artworks/archive",
+        roles: ["ADMIN"],
+      },
+    ],
+  },
+  {
+    group: "Settings",
+    roles: ["AUTHOR"],
+    items: [
+      {
+        id: "profile",
+        label: "My Profile",
+        icon: User,
+        path: "/dashboard/profile",
+        roles: ["AUTHOR"],
+      },
+    ],
+  },
+  {
+    group: "Exhibitions",
+    roles: ["AUTHOR", "ADMIN"],
+    items: [
+      {
+        id: "exhibitions",
+        label: "My Exhibitions",
+        icon: GalleryThumbnails,
+        path: "/dashboard/exhibitions",
+        roles: ["AUTHOR"],
+      },
+      {
+        id: "new-exhibition",
+        label: "Create Exhibition",
+        icon: Plus,
+        path: "/dashboard/exhibitions/new",
+        roles: ["AUTHOR"],
+      },
+      {
+        id: "all-exhibitions",
+        label: "All Exhibitions",
+        icon: List,
+        path: "/dashboard/exhibitions/all",
+        roles: ["ADMIN"],
+      },
+      {
+        id: "manage-visibility",
+        label: "Publish Control",
+        icon: Eye,
+        path: "/dashboard/exhibitions/publish",
+        roles: ["ADMIN"],
+      },
+    ],
+  },
+  {
+    group: "Management",
+    roles: ["ADMIN"],
+    items: [
+      {
+        id: "artists",
+        label: "Artists",
+        icon: Users,
+        path: "/dashboard/admin/artists",
+        roles: ["ADMIN"],
+      },
+      {
+        id: "artist-approval",
+        label: "Pending Approvals",
+        icon: UserCheck,
+        path: "/dashboard/admin/approvals",
+        roles: ["ADMIN"],
+        badge: "pending",
+      },
+      {
+        id: "all-users",
+        label: "All Users",
+        icon: UserCog,
+        path: "/dashboard/admin/users",
+        roles: ["ADMIN"],
+      },
+      {
+        id: "orders",
+        label: "All Orders",
+        icon: ShoppingCart,
+        path: "/dashboard/admin/orders",
+        roles: ["ADMIN"],
+      },
+      {
+        id: "archive",
+        label: "Archived Content",
+        icon: Archive,
+        path: "/dashboard/admin/archive",
+        roles: ["ADMIN"],
+      },
+    ],
+  },
+  {
+    group: "Sales & Orders",
+    roles: ["AUTHOR"],
+    items: [
+      {
+        id: "my-orders",
+        label: "Finance",
+        icon: Receipt,
+        path: "/dashboard/finance",
+        roles: ["AUTHOR"],
+      },
+    ],
+  },
+];
 export const TRENDING_WORKS = [
   {
     id: 1,
@@ -350,57 +541,6 @@ export const ALL_ARTWORKS = ARTISTS.flatMap((artist) =>
     artistName: artist.name,
   })),
 );
-
-export const NAVIGATION_CONFIG = [
-  {
-    group: "Strategy",
-    roles: ["ADMIN", "editor"],
-    items: [
-      {
-        id: "overview",
-        label: "Overview",
-        icon: LayoutDashboard,
-        path: "/",
-        roles: ["ADMIN", "editor"],
-      },
-      {
-        id: "live",
-        label: "Live Transmissions",
-        icon: Video,
-        badge: "2",
-        path: "/live",
-        roles: ["ADMIN"],
-      },
-      {
-        id: "class",
-        label: "Classifications",
-        icon: Layers,
-        path: "/classifications",
-        roles: ["ADMIN", "editor"],
-      },
-    ],
-  },
-  {
-    group: "Curation",
-    roles: ["ADMIN", "editor"],
-    items: [
-      {
-        id: "vault",
-        label: "Asset Vault",
-        icon: Database,
-        path: "/vault",
-        roles: ["ADMIN"],
-      },
-      {
-        id: "heritage",
-        label: "Heritage Sites",
-        icon: Globe,
-        path: "/heritage",
-        roles: ["ADMIN", "editor"],
-      },
-    ],
-  },
-];
 
 export const SPECIALTIES = [
   "Painter",

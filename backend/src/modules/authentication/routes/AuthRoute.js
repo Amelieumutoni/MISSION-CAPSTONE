@@ -231,6 +231,6 @@ AuthRouter.patch(
   authController.updateProfile,
 );
 
-AuthRouter.use("/admin", authGuard("ADMIN"), adminRouter);
+AuthRouter.use("/admin", adminRouter);
 
 module.exports = AuthRouter;

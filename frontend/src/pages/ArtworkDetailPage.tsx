@@ -1,40 +1,106 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
-import { ALL_ARTWORKS } from "@/utils/consts";
-import { Share2, Info } from "lucide-react";
+import { Share2, Info, Loader2 } from "lucide-react";
+import ArtworkService from "@/api/services/artworkService";
+import { toast } from "sonner";
+
+interface Artwork {
+  artwork_id: number | string;
+  title: string;
+  main_image: string;
+  technique: string;
+  dimensions: string;
+  year_created: string;
+  description: string;
+  artist?: { name: string; artist_id: string | number };
+  status: string;
+}
 
 export default function ArtworkDetailPage() {
   const { id } = useParams();
-  const work = ALL_ARTWORKS.find((w) => w.id === id);
+  const [work, setWork] = useState<Artwork | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!work)
+  const baseUrl =
+    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+
+  useEffect(() => {
+    const fetchWork = async () => {
+      try {
+        if (!id) return;
+        // Search the ID by converting the URL string param to a number
+        const response = await ArtworkService.getArtworkById(Number(id));
+
+        // Adjusting to your service structure which returns response.data
+        if (response?.data) {
+          setWork(response.data);
+        } else if (response) {
+          setWork(response as unknown as Artwork);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+        toast.error("Plate retrieval failed.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchWork();
+  }, [id]);
+
+  if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        Plate Not Found
+      <div className="h-screen flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="animate-spin text-slate-200" size={40} />
+        <span className="text-[10px] uppercase tracking-[0.5em] text-slate-400 font-bold">
+          Synchronizing Archive
+        </span>
       </div>
     );
+  }
+
+  if (!work) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center space-y-6">
+        <p className="font-serif text-2xl">Plate Not Found</p>
+        <Link
+          to="/archives"
+          className="text-[10px] uppercase font-bold border-b border-black pb-1"
+        >
+          Return to Archive
+        </Link>
+      </div>
+    );
+  }
+
+  const imageSrc = work.main_image.startsWith("http")
+    ? work.main_image
+    : `${baseUrl}${work.main_image}`;
 
   return (
     <div className="pt-32 px-8 md:px-16 lg:px-24">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-12">
-        <Link to="/collections" className="hover:text-black">
-          Archive
+        <Link to="/archives" className="hover:text-black transition-colors">
+          Archives
         </Link>
         <span className="text-slate-200">/</span>
-        <Link to={`/artists/${work.artistId}`} className="hover:text-black">
-          {work.artistName}
+        <Link
+          to={`/artists/${work.author?.user_id}`}
+          className="hover:text-black transition-colors"
+        >
+          {work.author?.name}
         </Link>
         <span className="text-slate-200">/</span>
         <span className="text-slate-900">{work.title}</span>
       </nav>
 
       <div className="grid lg:grid-cols-12 gap-20 pb-32">
-        {/* LARGE VISUAL AREA */}
+        {/* LARGE VISUAL AREA - SHADOW REMOVED */}
         <div className="lg:col-span-7">
-          <div className="bg-slate-50 p-4 md:p-12">
+          <div className="bg-white border border-slate-100 p-4 md:p-12">
             <img
-              src={work.image}
-              className="w-full h-auto shadow-2xl"
+              src={imageSrc}
+              className="w-full h-auto object-contain max-h-[80vh]"
               alt={work.title}
             />
           </div>
@@ -42,31 +108,40 @@ export default function ArtworkDetailPage() {
 
         {/* TECHNICAL DATA AREA */}
         <div className="lg:col-span-5 flex flex-col justify-center">
-          <h1 className="text-5xl md:text-7xl font-serif mb-4 tracking-tighter">
-            {work.title}
-          </h1>
-          <p className="text-xl text-slate-500 font-light italic mb-12">
-            "{work.story}"
-          </p>
+          <div className="mb-12">
+            <h1 className="text-5xl md:text-7xl font-serif mb-6 tracking-tighter leading-tight">
+              {work.title}
+            </h1>
+            <p className="text-lg text-slate-600 font-light leading-relaxed">
+              {work.description}
+            </p>
+          </div>
 
-          <div className="space-y-0 border-t border-slate-100">
+          <div className="space-y-0 border-t border-slate-200">
             <DetailRow
               label="Classification ID"
-              value={`CF-${work.id.toUpperCase()}`}
+              value={`CF-${String(work.artwork_id).padStart(4, "0").toUpperCase()}`}
             />
             <DetailRow
               label="Artisan"
-              value={work.artistName}
+              value={work.author?.name || "Unknown"}
               isLink
-              href={`/artists/${work.artistId}`}
+              href={`/artists/${work.author?.user_id}`}
             />
-            <DetailRow label="Material" value={work.medium} />
-            <DetailRow label="Dimensions" value={work.dimensions} />
-            <DetailRow label="Documentation Date" value={work.year} />
+            <DetailRow label="Technique" value={work.technique} />
+            <DetailRow
+              label="Dimensions"
+              value={work.dimensions || "Dimensions Variable"}
+            />
+            <DetailRow
+              label="Origin Date"
+              value={new Date(work.createdAt).toDateString()}
+            />
+            <DetailRow label="Status" value={work.status} />
           </div>
 
           <div className="mt-12 flex gap-4">
-            <button className="flex-1 bg-slate-900 text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-red-600 transition-colors">
+            <button className="flex-1 bg-slate-900 text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-black transition-all">
               Request Archival Access
             </button>
             <button className="w-20 border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors">
@@ -74,11 +149,11 @@ export default function ArtworkDetailPage() {
             </button>
           </div>
 
-          <div className="mt-8 flex items-start gap-4 p-6 bg-slate-50">
-            <Info className="w-5 h-5 text-slate-400 shrink-0" />
+          <div className="mt-8 flex items-start gap-4 p-6 bg-slate-50/50 border border-slate-100">
+            <Info className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
             <p className="text-[10px] text-slate-500 leading-relaxed uppercase tracking-widest font-bold">
-              This item is part of the permanent digital classification.
-              Authenticity verified by CraftFolio Rwanda.
+              Permanent digital classification. Authenticity verified by
+              CraftFolio Rwanda • Kigali Digital Archive.
             </p>
           </div>
         </div>
@@ -87,7 +162,6 @@ export default function ArtworkDetailPage() {
   );
 }
 
-// Small helper for the technical rows
 function DetailRow({
   label,
   value,
@@ -107,12 +181,14 @@ function DetailRow({
       {isLink ? (
         <Link
           to={href as string}
-          className="text-sm font-medium border-b border-slate-900"
+          className="text-[11px] uppercase tracking-widest font-bold border-b border-slate-900 hover:text-red-600 hover:border-red-600 transition-all"
         >
           {value}
         </Link>
       ) : (
-        <span className="text-sm font-medium text-slate-900">{value}</span>
+        <span className="text-[11px] uppercase tracking-widest font-bold text-slate-900">
+          {value}
+        </span>
       )}
     </div>
   );

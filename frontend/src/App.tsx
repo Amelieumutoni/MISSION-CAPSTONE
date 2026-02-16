@@ -33,8 +33,8 @@ export default function App() {
             <Route path="/artists" element={<ArtistsPage />} />
             <Route path="/artists/:id" element={<ArtistDetailPage />} />
             <Route path="/collections" element={<CollectionsPage />} />
-            <Route path="/artworks" element={<ArtworksPage />} />
-            <Route path="/artwork/:id" element={<ArtworkDetailPage />} />
+            <Route path="/archives" element={<ArtworksPage />} />
+            <Route path="/archives/:id" element={<ArtworkDetailPage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
           </Route>
 

@@ -3,12 +3,16 @@ import { NAVIGATION_CONFIG } from "@/utils/consts";
 import { LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import AuthService from "@/api/services/authService";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
+import { Link } from "react-router";
 
 export function Sidebar({ className }: { className?: string }) {
   const { user, loading } = useAuth();
   const userRole = user?.role || "editor";
   const navigate = useNavigate();
+
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   const image = import.meta.env.BACKEND_IMAGE_URL || "http://localhost:5000";
 
@@ -22,9 +26,12 @@ export function Sidebar({ className }: { className?: string }) {
       {/* Brand Section - Serif & Documentation Label */}
       <div className="p-8 mb-4">
         <div className="flex flex-col">
-          <h1 className="font-serif font-bold text-slate-900 dark:text-slate-100 tracking-tight text-3xl leading-none">
+          <a
+            href="/"
+            className="font-serif font-bold text-slate-900 dark:text-slate-100 tracking-tight text-3xl leading-none"
+          >
             Craftfolio
-          </h1>
+          </a>
           <p className="text-[9px] uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500 font-bold mt-2.5">
             Documentation System
           </p>
@@ -40,15 +47,28 @@ export function Sidebar({ className }: { className?: string }) {
             <NavSection key={section.group} label={section.group}>
               {section.items
                 .filter((item) => item.roles.includes(userRole))
-                .map((item) => (
-                  <NavItem
-                    key={item.id}
-                    icon={<item.icon size={17} strokeWidth={1.5} />}
-                    label={item.label}
-                    badge={item.badge}
-                    active={item.path === "/"}
-                  />
-                ))}
+                .map((item) => {
+                  const isActive =
+                    item.path === "/dashboard"
+                      ? currentPath === "/dashboard"
+                      : currentPath.startsWith(item.path);
+
+                  return (
+                    <Link
+                      to={item.disabled ? "#" : item.path}
+                      key={item.id}
+                      className="block"
+                    >
+                      <NavItem
+                        icon={<item.icon size={17} strokeWidth={1.5} />}
+                        label={item.label}
+                        badge={item.badge}
+                        active={isActive}
+                        disabled={item.disabled}
+                      />
+                    </Link>
+                  );
+                })}
             </NavSection>
           ))}
       </nav>

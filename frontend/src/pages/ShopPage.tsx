@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router"; // To redirect to login
 import {
   ShoppingCart,
   X,
@@ -7,10 +8,12 @@ import {
   Trash2,
   Plus,
   Minus,
+  Lock,
 } from "lucide-react";
 import ArtworkService from "@/api/services/artworkService";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/hooks/useAuth"; // Assuming you have an AuthContext
 import { Button } from "@/components/ui/button";
 
 interface Artwork {
@@ -29,6 +32,8 @@ export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
 
+  const navigate = useNavigate();
+  const { user } = useAuth(); // Get login status
   const {
     cart,
     addToCart,
@@ -51,10 +56,11 @@ export default function ShopPage() {
       try {
         const response = await ArtworkService.getArtworks();
         if (response?.data) {
-          const filtered = response.data.filter(
-            (w: Artwork) => w.status !== "ARCHIVED",
+          // STRICT FILTER: Only show AVAILABLE works to be sold
+          const availableOnly = response.data.filter(
+            (w: Artwork) => w.status === "AVAILABLE",
           );
-          setArtworks(filtered);
+          setArtworks(availableOnly);
         }
       } catch (error) {
         toast.error("Failed to load collection");
@@ -64,6 +70,23 @@ export default function ShopPage() {
     };
     loadMarketplace();
   }, []);
+
+  const handleCheckout = () => {
+    if (!user) {
+      toast.error("Please login to complete your purchase", {
+        description: "You need an account to handle shipping and security.",
+        action: {
+          label: "Login",
+          onClick: () => navigate("/login"),
+        },
+      });
+      setCartOpen(false);
+      navigate("/login");
+      return;
+    }
+    // Proceed to checkout logic here
+    navigate("/checkout");
+  };
 
   const categories = useMemo(() => {
     const techs = artworks.map((a) => a.technique);
@@ -81,32 +104,29 @@ export default function ShopPage() {
 
   return (
     <>
-      <nav className="top-16 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
+      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 py-4">
-            <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 flex-1 max-w-md group focus-within:ring-2 ring-slate-900 transition-all">
-              <Search
-                size={16}
-                className="text-slate-400 group-focus-within:text-slate-900"
-              />
+            <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 flex-1 max-w-md group focus-within:ring-1 ring-slate-400 transition-all">
+              <Search size={16} className="text-slate-400" />
               <input
                 type="text"
-                placeholder="Search artworks..."
+                placeholder="Search collection..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent border-none text-sm focus:ring-0 w-full placeholder:text-slate-500 font-medium outline-none"
+                className="bg-transparent border-none text-sm focus:ring-0 w-full outline-none"
               />
             </div>
 
-            <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveFilter(cat)}
-                  className={`px-4 py-2 text-[10px] uppercase font-bold tracking-widest whitespace-nowrap transition-all duration-300 ${
+                  className={`px-4 py-2 text-[10px] uppercase font-bold tracking-widest transition-all ${
                     activeFilter === cat
-                      ? "bg-slate-900 text-white shadow-lg"
-                      : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900"
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                   }`}
                 >
                   {cat}
@@ -117,13 +137,13 @@ export default function ShopPage() {
         </div>
       </nav>
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 lg:px-8 py-12 lg:py-16 w-full">
-        <header className="mb-12 lg:mb-16">
-          <h1 className="text-5xl lg:text-7xl font-serif tracking-tighter text-slate-900">
-            Market
+      <main className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
+        <header className="mb-12">
+          <h1 className="text-6xl font-serif tracking-tighter text-slate-900">
+            Market.
           </h1>
-          <p className="text-slate-500 text-xs uppercase tracking-[0.3em] mt-4">
-            {filteredArtworks.length} authenticated works
+          <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] mt-4 font-bold">
+            {filteredArtworks.length} available for acquisition
           </p>
         </header>
 
@@ -142,101 +162,47 @@ export default function ShopPage() {
                 baseUrl={baseUrl}
                 onBuy={() => {
                   addToCart(work);
-                  toast.success(`${work.title.toUpperCase()} ADDED`);
+                  toast.success(`${work.title} added to cart`);
                 }}
               />
             ))}
           </div>
         ) : (
-          <div className="text-center py-32 lg:py-40 bg-slate-50 border border-slate-200">
-            <X className="mx-auto text-slate-300 mb-4" size={48} />
+          <div className="text-center py-40 border border-dashed border-slate-200">
             <p className="text-slate-400 uppercase tracking-widest text-[10px] font-bold">
-              No pieces found
+              No pieces matching your selection
             </p>
           </div>
         )}
       </main>
 
-      {/* FLOATING CART BUTTON */}
-      {totalItems > 0 && (
-        <button
-          onClick={() => setCartOpen(true)}
-          className="fixed bottom-8 right-8 z-50 bg-slate-900 text-white flex items-center gap-4 px-6 py-4 shadow-2xl hover:scale-105 transition-transform group"
-        >
-          <div className="flex items-center gap-3">
-            <ShoppingCart size={20} />
-            <span className="font-mono text-sm font-bold">{totalItems}</span>
-          </div>
-          <div className="h-4 w-[1px] bg-slate-700" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">
-            View Cart
-          </span>
-          <ChevronRight
-            size={14}
-            className="group-hover:translate-x-1 transition-transform"
-          />
-        </button>
-      )}
-
+      {/* CART SIDEBAR */}
       {cartOpen && (
         <>
-          {/* Overlay */}
           <div
-            className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm animate-in fade-in duration-300"
+            className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
             onClick={() => setCartOpen(false)}
           />
-
-          {/* Sidebar Panel */}
-          <div className="fixed right-0 top-0 h-full w-full lg:w-[480px] bg-white z-50 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            {/* 1. HEADER - Rendered only once */}
-            <div className="p-6 lg:p-8 border-b border-slate-200">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-2xl font-serif font-bold text-slate-900">
-                  Your Cart
-                </h2>
-                <div className="flex items-center gap-4">
-                  {/* Clear All Button */}
-                  {cart.length > 0 && (
-                    <button
-                      onClick={() => {
-                        clearCart();
-                      }}
-                      className="text-[9px] uppercase tracking-[0.2em] text-red-500 font-bold hover:text-red-700 transition-colors"
-                    >
-                      Clear All
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setCartOpen(false)}
-                    className="p-2 hover:bg-slate-100 transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
+          <div className="fixed right-0 top-0 h-full w-full lg:w-[450px] bg-white z-50 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-serif">Your Cart</h2>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                  {totalItems} Pieces
+                </p>
               </div>
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
-                {totalItems} {totalItems === 1 ? "Item" : "Items"}
-              </p>
+              <button onClick={() => setCartOpen(false)}>
+                <X size={20} />
+              </button>
             </div>
 
-            {/* 2. BODY - Scrollable area */}
-            <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6 no-scrollbar">
+            <div className="flex-1 overflow-y-auto p-8 space-y-6">
               {cart.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center py-20">
-                  <ShoppingCart
-                    className="text-slate-200 mb-6"
-                    size={64}
-                    strokeWidth={1}
-                  />
-                  <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">
-                    Your cart is empty
+                <div className="h-full flex flex-col items-center justify-center opacity-30">
+                  <ShoppingCart size={48} strokeWidth={1} />
+                  <p className="mt-4 text-[10px] uppercase font-bold tracking-widest">
+                    Cart is empty
                   </p>
-                  <button
-                    onClick={() => setCartOpen(false)}
-                    className="mt-6 text-slate-900 text-[10px] uppercase tracking-widest font-bold border-b border-slate-900 pb-1 hover:text-slate-500 hover:border-slate-500 transition-all"
-                  >
-                    Continue Browsing
-                  </button>
                 </div>
               ) : (
                 cart.map((item: any) => (
@@ -253,22 +219,21 @@ export default function ShopPage() {
               )}
             </div>
 
-            {/* 3. FOOTER - Checkout section */}
             {cart.length > 0 && (
-              <div className="p-6 lg:p-8 border-t border-slate-200 bg-slate-50/50 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 uppercase tracking-widest text-[10px] font-bold">
-                    Subtotal
+              <div className="p-8 bg-slate-50 border-t border-slate-200">
+                <div className="flex justify-between items-end mb-6">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Total
                   </span>
-                  <span className="font-mono text-2xl font-bold text-slate-900">
+                  <span className="text-3xl font-mono font-bold">
                     ${getCartTotal().toLocaleString()}
                   </span>
                 </div>
-                <p className="text-[9px] text-slate-400 uppercase tracking-widest leading-relaxed">
-                  Shipping and taxes calculated at checkout. All works include a
-                  certificate of authenticity.
-                </p>
-                <Button className="w-full bg-slate-900 hover:bg-black text-white py-8 rounded-none text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
+                <Button
+                  onClick={handleCheckout}
+                  className="w-full bg-slate-900 py-8 rounded-none text-[10px] uppercase tracking-[0.2em] font-bold"
+                >
+                  {!user && <Lock size={12} className="mr-2" />}
                   Proceed to Checkout
                 </Button>
               </div>
@@ -276,9 +241,22 @@ export default function ShopPage() {
           </div>
         </>
       )}
+
+      {/* FLOATING BUTTON */}
+      {totalItems > 0 && (
+        <button
+          onClick={() => setCartOpen(true)}
+          className="fixed bottom-8 right-8 z-40 bg-slate-900 text-white flex items-center gap-4 px-6 py-4 shadow-2xl hover:scale-105 transition-transform"
+        >
+          <ShoppingCart size={18} />
+          <span className="text-xs font-bold font-mono">{totalItems}</span>
+        </button>
+      )}
     </>
   );
 }
+
+// ... Keep ShopCard, CartItem, and SkeletonCard from previous version but ensure ShopCard handles "AVAILABLE" UI cleanly.
 
 function ShopCard({
   work,

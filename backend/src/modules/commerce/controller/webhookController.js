@@ -52,11 +52,25 @@ async function handleSuccessfulPayment(session) {
         transaction,
       });
       for (const item of items) {
-        await Artwork.decrement("stock_quantity", {
+        const updatedArtwork = await Artwork.decrement("stock_quantity", {
           by: item.quantity,
           where: { artwork_id: item.artwork_id },
           transaction,
         });
+
+        const artwork = await Artwork.findByPk(item.artwork_id, {
+          transaction,
+        });
+
+        if (artwork && artwork.stock_quantity <= 0) {
+          await artwork.update(
+            {
+              status: "ARCHIVED",
+              stock_quantity: 0,
+            },
+            { transaction },
+          );
+        }
       }
       await transaction.commit();
       console.log(`Order ${orderId} successfully paid and stock updated.`);

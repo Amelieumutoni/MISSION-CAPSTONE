@@ -8,6 +8,8 @@ import {
   LogOut,
   ShoppingBag,
   ChevronDown,
+  User,
+  LucideLayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/context/CartContext";
@@ -37,7 +39,7 @@ export const Navbar = () => {
     { name: "Exhibitions", path: "/exhibitions" },
     { name: "Artists", path: "/artists" },
     { name: "Collections", path: "/collections" },
-    { name: "Artworks", path: "/artworks" },
+    { name: "Archives", path: "/archives" },
     { name: "Shop", path: "/shop" },
   ];
 
@@ -124,6 +126,19 @@ export const Navbar = () => {
                   </DropdownMenuItem>
                 )}
 
+                <DropdownMenuItem
+                  onClick={() =>
+                    navigate(
+                      `${user.role === "BUYER" ? "/buyer/dashboard" : "/dashboard"}`,
+                    )
+                  }
+                  className="rounded-none cursor-pointer flex items-center gap-2 px-4 py-3 text-slate-900 focus:bg-slate-50 focus:text-slate-900"
+                >
+                  <LucideLayoutDashboard size={14} />
+                  <span className="text-[10px] uppercase font-bold tracking-widest">
+                    Dashboard
+                  </span>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={AuthService.logout}
                   className="rounded-none cursor-pointer flex items-center gap-2 px-4 py-3 text-red-600 focus:bg-red-50 focus:text-red-600"
