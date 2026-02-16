@@ -50,7 +50,10 @@ const AuthService = {
 
   logout() {
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    localStorage.removeItem("user_data");
+    localStorage.removeItem("cart");
+
+    window.location.replace("/login");
   },
 };
 

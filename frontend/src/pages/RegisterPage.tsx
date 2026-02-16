@@ -14,6 +14,8 @@ import { useState } from "react";
 import { toast, Toaster } from "sonner";
 import AuthService from "@/api/services/authService"; // Using the structure we built
 import { useNavigate } from "react-router";
+import Autocomplete from "@/components/autoComplet";
+import { RWANDA_LOCATIONS, SPECIALTIES } from "@/utils/consts";
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1);
@@ -202,33 +204,32 @@ export default function RegisterPage() {
                   {formData.role === "author" && (
                     <>
                       <div className="grid grid-cols-2 gap-4">
+                        {/* Specialty Field */}
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-wider">
+                          <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
                             Specialty
                           </Label>
-                          <Input
-                            placeholder="e.g. Painter"
-                            className="rounded-none"
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                specialty: e.target.value,
-                              })
+                          <Autocomplete
+                            options={SPECIALTIES}
+                            value={formData.specialty}
+                            placeholder="Select Specialty"
+                            onChange={(val) =>
+                              setFormData({ ...formData, specialty: val })
                             }
                           />
                         </div>
+
+                        {/* Location Field */}
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-wider">
+                          <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
                             Location
                           </Label>
-                          <Input
-                            placeholder="Kigali, RW"
-                            className="rounded-none"
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                location: e.target.value,
-                              })
+                          <Autocomplete
+                            options={RWANDA_LOCATIONS}
+                            value={formData.location}
+                            placeholder="Select Location"
+                            onChange={(val) =>
+                              setFormData({ ...formData, location: val })
                             }
                           />
                         </div>
