@@ -161,7 +161,10 @@ export default function BuyerDashboard() {
                                   {order.items?.map((item, i) => (
                                     <img
                                       key={i}
-                                      src={item.artwork.main_image}
+                                      src={
+                                        "http://localhost:5000" +
+                                        item.artwork.main_image
+                                      }
                                       className="w-10 h-10 rounded-full border-2 border-white object-cover shadow-sm"
                                       title={item.artwork.title}
                                     />
