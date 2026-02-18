@@ -154,7 +154,7 @@ export const Navbar = () => {
                   >
                     <LucideLayoutDashboard size={14} />
                     <span className="text-[10px] uppercase font-bold tracking-widest">
-                      Artist Dashboard
+                      {user.role.toLowerCase}Dashboard
                     </span>
                   </DropdownMenuItem>
                 )}
