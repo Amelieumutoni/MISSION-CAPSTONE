@@ -82,7 +82,52 @@ async function handleSuccessfulPayment(session) {
 }
 
 async function handleFailedPayment(session) {
-  const orderId = session.metadata.order_id;
-  await Order.update({ status: "FAILED" }, { where: { order_id: orderId } });
-  console.log(`Order ${orderId} marked as FAILED.`);
+  const orderId = session.metadata?.order_id;
+  if (!orderId) return;
+
+  const transaction = await sequelize.transaction();
+
+  try {
+    // 1. Find the order and its items
+    const order = await Order.findByPk(orderId, {
+      include: [{ model: OrderItem }],
+      transaction,
+    });
+
+    if (!order || order.status === "FAILED") {
+      await transaction.rollback();
+      return;
+    }
+
+    // 2. Increment the stock back for each item
+    for (const item of order.OrderItems) {
+      await Artwork.increment("stock_quantity", {
+        by: item.quantity,
+        where: { artwork_id: item.artwork_id },
+        transaction,
+      });
+
+      // If the artwork was ARCHIVED because stock hit 0, bring it back to AVAILABLE
+      const artwork = await Artwork.findByPk(item.artwork_id, { transaction });
+      if (
+        artwork &&
+        artwork.status === "ARCHIVED" &&
+        artwork.stock_quantity > 0
+      ) {
+        await artwork.update({ status: "AVAILABLE" }, { transaction });
+      }
+    }
+
+    // 3. Mark the order as FAILED
+    await order.update({ status: "FAILED" }, { transaction });
+
+    await transaction.commit();
+    console.log(`Order ${orderId} failed: Stock restored and status updated.`);
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    console.error(
+      `Error processing failure webhook for Order ${orderId}:`,
+      error.message,
+    );
+  }
 }

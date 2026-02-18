@@ -133,6 +133,8 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({ message: "Profile not found" });
     }
 
+    console.log(req.file);
+
     const filePath = `/store/profiles/${req.file.filename}`;
 
     await profile.update({
@@ -151,5 +153,68 @@ exports.updateProfile = async (req, res) => {
   } catch (err) {
     console.error("Update Profile Error:", err);
     res.status(500).json({ message: "Error updating profile" });
+  }
+};
+
+exports.updateAccountSettings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, email, currentPassword, newPassword } = req.body;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // --- 1. UPDATE USERNAME (NAME) AND EMAIL ---
+    if (name) user.name = name;
+
+    if (email && email !== user.email) {
+      // Check if the new email is already taken by someone else
+      const emailExists = await User.findOne({ where: { email } });
+      if (emailExists) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
+      user.email = email;
+    }
+
+    // --- 2. UPDATE PASSWORD (Requires Verification) ---
+    if (newPassword) {
+      if (!currentPassword) {
+        return res
+          .status(400)
+          .json({ message: "Current password is required to set a new one" });
+      }
+
+      // Verify current password
+      const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!isMatch) {
+        return res
+          .status(401)
+          .json({ message: "Current password is incorrect" });
+      }
+
+      // Hash the new password
+      const salt = await bcrypt.genSalt(10);
+      user.password_hash = await bcrypt.hash(newPassword, salt);
+    }
+
+    await user.save();
+
+    // Return the updated user (excluding sensitive hash)
+    res.json({
+      message: "Account settings synchronized successfully",
+      user: {
+        id: user.user_id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error("Account update error:", err);
+    res
+      .status(500)
+      .json({ message: "Internal server error during synchronization" });
   }
 };

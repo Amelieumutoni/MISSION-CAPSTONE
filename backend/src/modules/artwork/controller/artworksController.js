@@ -72,6 +72,13 @@ exports.getArtworks = async (req, res) => {
   try {
     const artworks = await Artwork.findAll({
       order: [["created_at", "DESC"]],
+      include: [
+        {
+          model: User,
+          as: "author",
+          attributes: ["user_id", "name", "email", "status"],
+        },
+      ],
     });
 
     res.status(200).json({

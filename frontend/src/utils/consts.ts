@@ -3,7 +3,6 @@ import {
   User,
   Image as ImageIcon,
   PlusSquare,
-  Folder,
   GalleryThumbnails,
   Plus,
   List,
@@ -14,7 +13,6 @@ import {
   ShoppingCart,
   Archive,
   Receipt,
-  ArchiveIcon,
   ListCollapse,
 } from "lucide-react";
 
@@ -58,14 +56,6 @@ export const NAVIGATION_CONFIG = [
         roles: ["AUTHOR"],
         variant: "outline",
       },
-      {
-        id: "collections",
-        label: "Collections",
-        icon: Folder,
-        path: "/dashboard/collections",
-        roles: ["AUTHOR"],
-        disabled: true,
-      },
     ],
   },
   {
@@ -78,26 +68,6 @@ export const NAVIGATION_CONFIG = [
         icon: ListCollapse,
         path: "/dashboard/artworks",
         roles: ["ADMIN"],
-      },
-      {
-        id: "artwork",
-        label: "Archieve Artwork",
-        icon: ArchiveIcon,
-        path: "/dashboard/artworks/archive",
-        roles: ["ADMIN"],
-      },
-    ],
-  },
-  {
-    group: "Settings",
-    roles: ["AUTHOR"],
-    items: [
-      {
-        id: "profile",
-        label: "My Profile",
-        icon: User,
-        path: "/dashboard/profile",
-        roles: ["AUTHOR"],
       },
     ],
   },
@@ -143,7 +113,7 @@ export const NAVIGATION_CONFIG = [
         id: "artists",
         label: "Artists",
         icon: Users,
-        path: "/dashboard/admin/artists",
+        path: "/dashboard/artists",
         roles: ["ADMIN"],
       },
       {
@@ -158,14 +128,14 @@ export const NAVIGATION_CONFIG = [
         id: "all-users",
         label: "All Users",
         icon: UserCog,
-        path: "/dashboard/admin/users",
+        path: "/dashboard/users/all",
         roles: ["ADMIN"],
       },
       {
         id: "orders",
         label: "All Orders",
         icon: ShoppingCart,
-        path: "/dashboard/admin/orders",
+        path: "/dashboard/orders",
         roles: ["ADMIN"],
       },
       {

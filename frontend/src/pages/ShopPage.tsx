@@ -3,7 +3,6 @@ import { useNavigate } from "react-router"; // To redirect to login
 import {
   ShoppingCart,
   X,
-  ChevronRight,
   Search,
   Trash2,
   Plus,
@@ -85,7 +84,7 @@ export default function ShopPage() {
       return;
     }
     // Proceed to checkout logic here
-    navigate("/checkout");
+    navigate("/cart");
   };
 
   const categories = useMemo(() => {
@@ -184,16 +183,23 @@ export default function ShopPage() {
             onClick={() => setCartOpen(false)}
           />
           <div className="fixed right-0 top-0 h-full w-full lg:w-[450px] bg-white z-50 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-serif">Your Cart</h2>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                  {totalItems} Pieces
-                </p>
+            <div className="border-b border-slate-100 flex flex-col py-6 gap-y-10">
+              <div className="px-8 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-serif">Your Cart</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    {totalItems} Pieces
+                  </p>
+                </div>
+                <button onClick={() => setCartOpen(false)}>
+                  <X size={20} />
+                </button>
               </div>
-              <button onClick={() => setCartOpen(false)}>
-                <X size={20} />
-              </button>
+              <div className="px-8 flex hover:underline text-red-400  justify-between items-center">
+                <button className="cursor-pointer" onClick={() => clearCart()}>
+                  Clear Cart
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-6">

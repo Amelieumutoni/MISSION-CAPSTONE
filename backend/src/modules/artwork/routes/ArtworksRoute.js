@@ -255,7 +255,7 @@ router.patch(
  */
 router.patch(
   "/:artworkId/archive",
-  authGuard("AUTHOR"),
+  authGuard("AUTHOR", "ADMIN"),
   artworkController.archiveArtwork,
 );
 

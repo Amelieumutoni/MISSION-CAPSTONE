@@ -8,10 +8,10 @@ import {
   LogOut,
   ShoppingBag,
   ChevronDown,
-  User,
   LucideLayoutDashboard,
+  Package, // Added for Orders
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import {
   Sheet,
@@ -26,14 +26,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import AuthService from "@/api/services/authService";
 
 export const Navbar = () => {
   const navigate = useNavigate();
   const pathname = useLocation().pathname;
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { cart } = useCart();
   const [open, setOpen] = useState(false);
+
+  // Helper to determine the correct dashboard path based on role
+  const dashboardPath = user?.role === "BUYER" ? "/buyer" : "/dashboard";
 
   const navLinks = [
     { name: "Exhibitions", path: "/exhibitions" },
@@ -42,6 +44,12 @@ export const Navbar = () => {
     { name: "Archives", path: "/archives" },
     { name: "Shop", path: "/shop" },
   ];
+
+  const handleLogout = () => {
+    navigate("/", { replace: true });
+    logout();
+    setOpen(false);
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-50">
@@ -60,7 +68,9 @@ export const Navbar = () => {
             <Link
               key={link.name}
               to={link.path}
-              className={`hover:text-black transition-colors ${pathname === link.path ? "text-slate-800" : ""}`}
+              className={`hover:text-black transition-colors ${
+                pathname === link.path ? "text-slate-800" : ""
+              }`}
             >
               {link.name}
             </Link>
@@ -74,11 +84,10 @@ export const Navbar = () => {
           </button>
 
           {user ? (
-            /* LOGGED IN STATE */
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 outline-none group border border-transparent hover:border-slate-200 p-1 transition-all">
                 <div className="w-8 h-8 bg-slate-100 rounded-full border border-slate-200 overflow-hidden flex-shrink-0">
-                  {user.profile.profile_picture ? (
+                  {user.profile?.profile_picture ? (
                     <img
                       src={`${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${user.profile.profile_picture}`}
                       alt={user.name}
@@ -102,46 +111,57 @@ export const Navbar = () => {
               >
                 <div className="px-4 py-3 border-b border-slate-100">
                   <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-1">
-                    Authenticated As
+                    {user.role} Account
                   </p>
                   <p className="text-sm font-serif font-bold text-slate-900 truncate">
-                    {user.name}
+                    {user.email}
                   </p>
                 </div>
 
-                {user.role === "BUYER" && (
-                  <DropdownMenuItem
-                    onClick={() => navigate("/shop")}
-                    className="rounded-none cursor-pointer flex items-center justify-between px-4 py-3 focus:bg-slate-50 border-b border-slate-100"
-                  >
-                    <div className="flex items-center gap-2">
-                      <ShoppingBag size={14} />
-                      <span className="text-[10px] uppercase font-bold tracking-widest">
-                        My Cart
+                {/* ROLE-BASED LINKS */}
+                {user.role === "BUYER" ? (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => navigate("/cart")}
+                      className="rounded-none cursor-pointer flex items-center justify-between px-4 py-3 focus:bg-slate-50 border-b border-slate-100"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ShoppingBag size={14} />
+                        <span className="text-[10px] uppercase font-bold tracking-widest">
+                          My Cart
+                        </span>
+                      </div>
+                      <span className="font-mono text-[10px] bg-slate-900 text-white px-1.5 py-0.5">
+                        {cart.length}
                       </span>
-                    </div>
-                    <span className="font-mono text-[10px] bg-slate-900 text-white px-1.5 py-0.5">
-                      {cart.length}
+                    </DropdownMenuItem>
+
+                    {/* Buyer specific Orders link */}
+                    <DropdownMenuItem
+                      onClick={() => navigate("/buyer")}
+                      className="rounded-none cursor-pointer flex items-center gap-2 px-4 py-3 text-slate-900 focus:bg-slate-50"
+                    >
+                      <Package size={14} />
+                      <span className="text-[10px] uppercase font-bold tracking-widest">
+                        Dashboard
+                      </span>
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={() => navigate("/dashboard")}
+                    className="rounded-none cursor-pointer flex items-center gap-2 px-4 py-3 text-slate-900 focus:bg-slate-50"
+                  >
+                    <LucideLayoutDashboard size={14} />
+                    <span className="text-[10px] uppercase font-bold tracking-widest">
+                      Artist Dashboard
                     </span>
                   </DropdownMenuItem>
                 )}
 
                 <DropdownMenuItem
-                  onClick={() =>
-                    navigate(
-                      `${user.role === "BUYER" ? "/buyer/dashboard" : "/dashboard"}`,
-                    )
-                  }
-                  className="rounded-none cursor-pointer flex items-center gap-2 px-4 py-3 text-slate-900 focus:bg-slate-50 focus:text-slate-900"
-                >
-                  <LucideLayoutDashboard size={14} />
-                  <span className="text-[10px] uppercase font-bold tracking-widest">
-                    Dashboard
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={AuthService.logout}
-                  className="rounded-none cursor-pointer flex items-center gap-2 px-4 py-3 text-red-600 focus:bg-red-50 focus:text-red-600"
+                  onClick={handleLogout}
+                  className="rounded-none cursor-pointer flex items-center gap-2 px-4 py-3 text-red-600 focus:bg-red-50 focus:text-red-600 border-t border-slate-100"
                 >
                   <LogOut size={14} />
                   <span className="text-[10px] uppercase font-bold tracking-widest">
@@ -151,11 +171,10 @@ export const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            /* LOGGED OUT STATE */
-            <>
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate("/login")}
-                className="hidden cursor-pointer md:block text-[10px] uppercase font-bold tracking-[0.2em] text-slate-900"
+                className="hidden md:block text-[10px] uppercase font-bold tracking-[0.2em] text-slate-900"
               >
                 Login
               </button>
@@ -165,7 +184,7 @@ export const Navbar = () => {
               >
                 Join
               </Button>
-            </>
+            </div>
           )}
 
           {/* MOBILE DRAWER */}
@@ -192,41 +211,36 @@ export const Navbar = () => {
                       <Link
                         key={link.name}
                         to={link.path}
-                        className="text-4xl font-serif italic text-slate-900 hover:pl-4 transition-all duration-300"
+                        className="text-4xl font-serif italic text-slate-900"
                         onClick={() => setOpen(false)}
                       >
                         {link.name}
                       </Link>
                     ))}
 
+                    {user && (
+                      <Link
+                        to={dashboardPath}
+                        className="text-4xl font-serif italic text-slate-900 border-t border-slate-100 pt-8"
+                        onClick={() => setOpen(false)}
+                      >
+                        {user.role === "BUYER" ? "My Profile" : "Dashboard"}
+                      </Link>
+                    )}
+
                     {!user && (
                       <div className="pt-8 space-y-6">
-                        <button
+                        <Button
                           onClick={() => {
                             setOpen(false);
                             navigate("/login");
                           }}
-                          className="block text-[11px] uppercase font-bold tracking-[0.4em] text-slate-900 cursor-pointer"
-                        >
-                          Enter Gallery
-                        </button>
-                        <Button
-                          onClick={() => {
-                            setOpen(false);
-                            navigate("/register");
-                          }}
                           className="w-full rounded-none py-8 text-[10px] font-bold uppercase tracking-[0.3em] bg-slate-900"
                         >
-                          Join as Artist
+                          Login
                         </Button>
                       </div>
                     )}
-                  </div>
-
-                  <div className="p-8 border-t border-slate-50 bg-slate-50/50">
-                    <p className="text-[8px] uppercase tracking-[0.5em] text-slate-400">
-                      Kigali • Rwanda • Digital Archive
-                    </p>
                   </div>
                 </div>
               </SheetContent>

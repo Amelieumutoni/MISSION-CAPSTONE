@@ -176,8 +176,6 @@ router.patch(
   exhibitionController.toggleVisibility,
 );
 
-
-
 /**
  * @swagger
  * /exhibitions/{exhibitionId}/artworks:
@@ -223,8 +221,6 @@ router.put(
   authGuard("AUTHOR"),
   exhibitionController.assignArtworks,
 );
-
-
 
 // Getting a list of exhibitions by public
 
@@ -279,5 +275,11 @@ router.get("/public", exhibitionController.getPublicExhibitions);
  *         description: Server error
  */
 router.get("/public/:exhibitionId", exhibitionController.getExhibitionById);
+
+router.post(
+  "/:exhibitionId/start-stream",
+  authGuard("AUTHOR"),
+  exhibitionController.startLiveStream,
+);
 
 module.exports = router;

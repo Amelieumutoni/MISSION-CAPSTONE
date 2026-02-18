@@ -5,6 +5,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* 1. The entire scrollbar width/height */
+::-webkit-scrollbar {
+    width: 6px; /* Very thin and clean */
+    height: 6px;
+}
+
+/* 2. The background track */
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* 3. The draggable handle (The "Button") */
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* Slate-300 - subtle gray */
+    border-radius: 10px;
+}
+
+/* 4. Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b; /* Slate-500 - darker gray */
+}
+
+/* Dark mode support */
+.dark ::-webkit-scrollbar-thumb {
+    background: #334155; /* Slate-700 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569; /* Slate-600 */
+}
 @theme {
     --font-serif: "Libre Baskerville", serif;
     --font-sans: "Plus Jakarta Sans", sans-serif;

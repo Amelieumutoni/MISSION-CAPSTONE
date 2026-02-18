@@ -15,6 +15,10 @@ module.exports = {
         type: Sequelize.ENUM("CLASSIFICATION", "LIVE"),
         defaultValue: "CLASSIFICATION",
       },
+      status: {
+        type: Sequelize.ENUM("UPCOMING", "LIVE", "ARCHIVED"),
+        defaultValue: "UPCOMING",
+      },
       banner_image: { type: Sequelize.STRING },
       stream_link: { type: Sequelize.STRING },
       start_date: { type: Sequelize.DATE },

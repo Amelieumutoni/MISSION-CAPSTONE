@@ -1,5 +1,6 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { Order, OrderItem, Artwork, User, sequelize } = require("../../index");
+const { Op } = require("sequelize");
 // Creating an order
 exports.createOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -18,25 +19,41 @@ exports.createOrder = async (req, res) => {
     const orderItemsToCreate = [];
 
     for (const item of items) {
-      const artwork = await Artwork.findByPk(item.artwork_id);
+      // 1. Fetch artwork WITHIN the transaction to prevent race conditions
+      const artwork = await Artwork.findByPk(item.artwork_id, { transaction });
 
       if (!artwork) {
         throw new Error(`Artwork with ID ${item.artwork_id} not found.`);
       }
 
+      // 2. Check stock
       if (artwork.stock_quantity < item.quantity) {
         throw new Error(
           `Insufficient stock for: ${artwork.title}. Available: ${artwork.stock_quantity}`,
         );
       }
 
+      // 3. REDUCE STOCK IMMEDIATELY
+      // This "locks" the item for the buyer
+      await artwork.decrement("stock_quantity", {
+        by: item.quantity,
+        transaction,
+      });
+
+      // 4. Update status if sold out
+      // Refresh local artwork instance to check new stock level
+      const updatedStock = artwork.stock_quantity - item.quantity;
+      if (updatedStock <= 0) {
+        await artwork.update({ status: "SOLD" }, { transaction });
+      }
+
       const itemPrice = parseFloat(artwork.price);
       calculatedTotal += itemPrice * item.quantity;
 
-      // Prepare Stripe line item (Stripe uses cents/smallest currency unit)
+      // Prepare Stripe line item
       stripeLineItems.push({
         price_data: {
-          currency: "usd", // Testing mode
+          currency: "usd",
           product_data: {
             name: artwork.title,
             description: artwork.description?.substring(0, 100),
@@ -58,7 +75,7 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // 2. Create the Parent Order record
+    // 5. Create Parent Order
     const newOrder = await Order.create(
       {
         buyer_id: req.user.id,
@@ -69,37 +86,36 @@ exports.createOrder = async (req, res) => {
       { transaction },
     );
 
-    // 3. Create the OrderItems linked to the new Order ID
+    // 6. Create OrderItems
     await OrderItem.bulkCreate(
       orderItemsToCreate.map((oi) => ({ ...oi, order_id: newOrder.order_id })),
       { transaction },
     );
 
-    // 4. Initialize Stripe Session
+    // 7. Initialize Stripe Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: stripeLineItems,
       mode: "payment",
-      success_url: `${process.env.FRONTEND_URL}/?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/?order_id=${newOrder.order_id}`,
+      success_url: `${process.env.FRONTEND_URL}/cart?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/cart?order_id=${newOrder.order_id}`,
       metadata: {
         order_id: newOrder.order_id.toString(),
       },
     });
 
-    // 5. Save the Session ID back to the Order
     await newOrder.update({ stripe_session_id: session.id }, { transaction });
 
-    // Everything went well, commit the DB changes
     await transaction.commit();
 
     res.status(201).json({
       success: true,
-      checkout_url: session.url, // Redirect your frontend to this Stripe URL
+      checkout_url: session.url,
       order_id: newOrder.order_id,
     });
   } catch (error) {
-    await transaction.rollback();
+    // If anything fails (including Stripe), the stock decrement is reversed automatically
+    if (transaction) await transaction.rollback();
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -198,27 +214,46 @@ exports.getOrderDetails = async (req, res) => {
 };
 
 exports.cancelOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const transaction = await sequelize.transaction();
+
   try {
-    const { orderId } = req.params;
     const order = await Order.findByPk(orderId, {
-      where: {
-        buyer_id: req.user.id,
-      },
+      include: [{ model: OrderItem, as: "items" }],
+      transaction,
     });
+    if (order && order.status === "PENDING") {
+      for (const item of order.items) {
+        await Artwork.increment("stock_quantity", {
+          by: item.quantity,
+          where: { artwork_id: item.artwork_id },
+          transaction,
+        });
 
-    if (!order) return res.status(404).json({ message: "Order not found" });
+        // Restore status if it was archived
+        await Artwork.update(
+          { status: "AVAILABLE" },
+          {
+            where: {
+              artwork_id: item.artwork_id,
+              stock_quantity: { [Op.gt]: 0 },
+            },
+            transaction,
+          },
+        );
+      }
 
-    // Business Logic: Only cancel if not already shipped
-    if (order.status === "PAID") {
-      return res.status(400).json({ message: "Cannot cancel paid order" });
+      await order.update({ status: "CANCELLED" }, { transaction });
+      await transaction.commit();
+      return res
+        .status(200)
+        .json({ message: "Order cancelled and stock restored." });
     }
 
-    await order.update({ status: "CANCELLED" });
-
-    res
-      .status(200)
-      .json({ success: true, message: "Order has been cancelled." });
+    await transaction.rollback();
+    res.status(400).json({ message: "Order cannot be cancelled." });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    await transaction.rollback();
+    res.status(500).json({ error: error.message });
   }
 };

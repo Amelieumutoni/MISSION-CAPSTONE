@@ -25,6 +25,10 @@ const Exhibition = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    status: {
+      type: DataTypes.ENUM("UPCOMING", "LIVE", "ARCHIVED"),
+      defaultValue: "UPCOMING",
+    },
     banner_image: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -53,6 +57,11 @@ Exhibition.associate = (models) => {
     foreignKey: "exhibition_id",
     otherKey: "artwork_id",
     as: "artworks",
+  });
+
+  Exhibition.hasOne(models.LiveStream, {
+    foreignKey: "exhibition_id",
+    as: "live_details",
   });
 };
 

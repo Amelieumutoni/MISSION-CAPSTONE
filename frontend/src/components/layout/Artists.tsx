@@ -1,8 +1,51 @@
-import { MapPin, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MapPin, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ARTISANS } from "@/utils/consts";
+import ArtistService, { type User } from "@/api/services/artistService";
+import { useNavigate } from "react-router";
 
 export default function ArtistsSection() {
+  const [artists, setArtists] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadArtists = async () => {
+      try {
+        const response = await ArtistService.getAllArtists();
+        // Assuming the response structure is { data: [...] } or just [...]
+        const data = Array.isArray(response) ? response : response.data || [];
+
+        const activeArtists = data
+          .filter((user: User) => user.status === "ACTIVE")
+          .map((user: User) => ({
+            id: user.user_id,
+            name: user.name,
+            specialty: user.profile?.bio || "Craft Master", // Using bio as specialty if no specific field
+            location: user.profile?.location || "Rwanda",
+            works: 0, // Admin endpoint might not include count; default to 0
+            image:
+              "http://localhost:5000" + user.profile?.profile_picture ||
+              import.meta.env.BACKEND_IMAGE_URL + user.profile?.profile_picture, // Placeholder or real image
+          }));
+        console.log(data);
+        setArtists(activeArtists);
+      } catch (error) {
+        console.error("Error fetching real artists:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadArtists();
+  }, []);
+
+  // Determine display data: Use real artists if they exist, otherwise fallback
+  const hasRealData = artists.length > 0;
+  const displayArtists = hasRealData
+    ? artists.slice(0, 3)
+    : ARTISANS.slice(0, 3);
+
   return (
     <section className="px-8 py-24 bg-white border-t border-slate-50">
       <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -28,9 +71,15 @@ export default function ArtistsSection() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-12">
-        {ARTISANS.map((artisan) => (
-          <ArtisanCard key={artisan.name} {...artisan} />
-        ))}
+        {loading ? (
+          <div className="col-span-full flex justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-slate-200" />
+          </div>
+        ) : (
+          displayArtists.map((artisan, index) => (
+            <ArtisanCard key={artisan.id || index} {...artisan} />
+          ))
+        )}
       </div>
     </section>
   );
@@ -42,13 +91,17 @@ function ArtisanCard({
   location,
   works,
   image,
+  id,
 }: {
   name: string;
   specialty: string;
   location: string;
-  works: number;
+  works: number | string;
   image: string;
+  id: number;
 }) {
+  const navigate = useNavigate();
+
   return (
     <div className="group cursor-pointer">
       <div className="aspect-4/5 bg-slate-100 mb-6 overflow-hidden relative">
@@ -57,13 +110,12 @@ function ArtisanCard({
           alt={name}
           className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110"
         />
-
-        {/* Subtle Gradient Overlay */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-        {/* Centered Button */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <Button className="opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 rounded-none bg-white text-slate-900 px-8 py-6 text-[10px] font-bold uppercase tracking-widest hover:bg-slate-900 hover:text-white border-none shadow-xl">
+          <Button
+            onClick={() => navigate(`/artists/${id}`)}
+            className="opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 rounded-none bg-white text-slate-900 px-8 py-6 text-[10px] font-bold uppercase tracking-widest hover:bg-slate-900 hover:text-white border-none shadow-xl"
+          >
             View Profile
           </Button>
         </div>
@@ -74,7 +126,7 @@ function ArtisanCard({
           <h5 className="font-serif text-2xl mb-1 tracking-tight group-hover:text-slate-600 transition-colors">
             {name}
           </h5>
-          <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mb-4 font-medium">
+          <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mb-4 font-medium max-w-[200px] truncate">
             {specialty}
           </p>
         </div>

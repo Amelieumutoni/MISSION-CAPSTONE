@@ -60,6 +60,26 @@ router.get("/", authGuard("BUYER"), orderController.getAllOrders);
 
 /**
  * @swagger
+ * /orders/all:
+ *   get:
+ *     summary: Get order details
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Order details
+ */
+router.get("/all", authGuard("ADMIN"), orderController.getAllOrdersByAdmin);
+
+/**
+ * @swagger
  * /orders/{id}:
  *   get:
  *     summary: Get order details
@@ -81,26 +101,6 @@ router.get(
   authGuard("BUYER", "ADMIN"),
   orderController.getOrderDetails,
 );
-
-/**
- * @swagger
- * /orders/all:
- *   get:
- *     summary: Get order details
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Order details
- */
-router.get("/all", authGuard("ADMIN"), orderController.getAllOrdersByAdmin);
 
 /**
  * @swagger

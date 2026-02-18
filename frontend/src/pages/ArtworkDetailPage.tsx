@@ -4,6 +4,7 @@ import { Share2, Info, Loader2 } from "lucide-react";
 import ArtworkService from "@/api/services/artworkService";
 import { toast } from "sonner";
 
+// Updated Interface to match your Service/Backend
 interface Artwork {
   artwork_id: number | string;
   title: string;
@@ -12,8 +13,13 @@ interface Artwork {
   dimensions: string;
   year_created: string;
   description: string;
-  artist?: { name: string; artist_id: string | number };
   status: string;
+  createdAt: string;
+  author?: {
+    name: string;
+    user_id: string | number;
+    status: string;
+  };
 }
 
 export default function ArtworkDetailPage() {
@@ -28,18 +34,18 @@ export default function ArtworkDetailPage() {
     const fetchWork = async () => {
       try {
         if (!id) return;
-        // Search the ID by converting the URL string param to a number
+
         const response = await ArtworkService.getArtworkById(Number(id));
 
-        // Adjusting to your service structure which returns response.data
-        if (response?.data) {
-          setWork(response.data);
-        } else if (response) {
-          setWork(response as unknown as Artwork);
+        const artworkData = response?.data || response;
+
+        if (artworkData) {
+          setWork(artworkData);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Fetch error:", error);
-        toast.error("Plate retrieval failed.");
+        // This catches the "Inactive artist" error thrown in your service
+        toast.error(error.message || "Plate retrieval failed.");
       } finally {
         setLoading(false);
       }
@@ -72,7 +78,8 @@ export default function ArtworkDetailPage() {
     );
   }
 
-  const imageSrc = work.main_image.startsWith("http")
+  // Handle image path correctly
+  const imageSrc = work.main_image?.startsWith("http")
     ? work.main_image
     : `${baseUrl}${work.main_image}`;
 
@@ -88,14 +95,13 @@ export default function ArtworkDetailPage() {
           to={`/artists/${work.author?.user_id}`}
           className="hover:text-black transition-colors"
         >
-          {work.author?.name}
+          {work.author?.name || "Unknown Artist"}
         </Link>
         <span className="text-slate-200">/</span>
         <span className="text-slate-900">{work.title}</span>
       </nav>
 
       <div className="grid lg:grid-cols-12 gap-20 pb-32">
-        {/* LARGE VISUAL AREA - SHADOW REMOVED */}
         <div className="lg:col-span-7">
           <div className="bg-white border border-slate-100 p-4 md:p-12">
             <img
@@ -106,7 +112,6 @@ export default function ArtworkDetailPage() {
           </div>
         </div>
 
-        {/* TECHNICAL DATA AREA */}
         <div className="lg:col-span-5 flex flex-col justify-center">
           <div className="mb-12">
             <h1 className="text-5xl md:text-7xl font-serif mb-6 tracking-tighter leading-tight">
@@ -135,7 +140,9 @@ export default function ArtworkDetailPage() {
             />
             <DetailRow
               label="Origin Date"
-              value={new Date(work.createdAt).toDateString()}
+              value={
+                work.createdAt ? new Date(work.createdAt).toDateString() : "N/A"
+              }
             />
             <DetailRow label="Status" value={work.status} />
           </div>
@@ -162,17 +169,8 @@ export default function ArtworkDetailPage() {
   );
 }
 
-function DetailRow({
-  label,
-  value,
-  isLink,
-  href,
-}: {
-  label: string;
-  value: string;
-  isLink?: boolean;
-  href?: string;
-}) {
+// Sub-component DetailRow remains the same
+function DetailRow({ label, value, isLink, href }: any) {
   return (
     <div className="flex justify-between items-center py-6 border-b border-slate-100">
       <span className="text-[10px] uppercase tracking-[0.3em] text-slate-400 font-bold">

@@ -1,9 +1,13 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router";
+import { useAuth } from "@/context/AuthContext";
+import AuthService from "@/api/services/authService";
+import { toast, Toaster } from "sonner";
+
+// UI Components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-import { useNavigate } from "react-router";
-
 import {
   Card,
   CardContent,
@@ -11,25 +15,46 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useEffect, useState } from "react";
-import { toast, Toaster } from "sonner";
-import AuthService from "@/api/services/authService";
 
 export default function LoginPage() {
-  const [credentials, setCredentials] = useState({
-    email: "",
-    password: "",
-  });
+  const [credentials, setCredentials] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, loading, refreshUser, user } = useAuth();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      navigate("/dashboard", { replace: true });
+    if (!loading && isAuthenticated && user) {
+      // 1. Handle Pending/Inactive Authors first
+      if (user.role === "AUTHOR" && user.status === "INACTIVE") {
+        return;
+      }
+
+      const intendedDestination = location.state?.from?.pathname;
+
+      if (
+        intendedDestination &&
+        intendedDestination !== "/login" &&
+        intendedDestination !== "/dashboard" &&
+        intendedDestination !== "/buyer"
+      ) {
+        navigate(intendedDestination, { replace: true });
+      } else {
+        switch (user.role) {
+          case "ADMIN":
+            navigate("/dashboard", { replace: true });
+            break;
+          case "AUTHOR":
+            navigate("/dashboard", { replace: true });
+            break;
+          default:
+            navigate("/cart", { replace: true });
+            break;
+        }
+      }
     }
-  }, [navigate]);
+  }, [isAuthenticated, loading, user, navigate, location]);
 
   const handleLogin = async () => {
     if (!credentials.email || !credentials.password) {
@@ -41,35 +66,29 @@ export default function LoginPage() {
 
     setIsLoading(true);
 
-    const loginPromise = AuthService.login({
-      email: credentials.email,
-      password: credentials.password,
-    });
+    // We create an async function to pass to toast.promise
+    const performLogin = async () => {
+      const data = await AuthService.login(credentials);
 
-    toast.promise(loginPromise, {
+      // CRITICAL: Sync the AuthContext with the new token in localStorage
+      await refreshUser();
+
+      return data;
+    };
+
+    toast.promise(performLogin(), {
       loading: "Verifying credentials...",
       success: (data) => {
         setIsLoading(false);
 
-        const role = data.user.role;
-
-        if (data.user.status === "INACTIVE" && role === "AUTHOR") {
+        if (data.user.status === "INACTIVE" && data.user.role === "AUTHOR") {
           toast.info("Account Pending", {
             description: "An admin is currently reviewing your artist profile.",
           });
         }
 
-        if (role === "AUTHOR" || role === "ADMIN") {
-          setTimeout(() => {
-            navigate("/dashboard");
-          }, 1000);
-          return `Welcome back, ${data.user.name}`;
-        } else {
-          setTimeout(() => {
-            navigate("/dashboard");
-          }, 1000);
-          return `Welcome back, ${data.user.name}`;
-        }
+        // Navigation is handled by the useEffect above once refreshUser finishes
+        return `Welcome back, ${data.user.name}`;
       },
       error: (err) => {
         setIsLoading(false);
@@ -77,6 +96,7 @@ export default function LoginPage() {
       },
     });
   };
+
   const artImages = [
     "https://lirp.cdn-website.com/09ed37c1/dms3rep/multi/opt/Nziza%2BArt%2BInitiative-inema-nomad-agency-12-1920w.JPG",
     "https://lirp.cdn-website.com/09ed37c1/dms3rep/multi/opt/timothy-inema-nomad-15-1920w.jpg",
@@ -85,9 +105,9 @@ export default function LoginPage() {
   ];
 
   return (
-    <div className="min-h-screen w-full flex bg-white font-sans">
-      <Toaster position="top-right" duration={3000} richColors />{" "}
-      {/* 3. Add Toaster component */}
+    <div className="min-h-screen w-full flex bg-white dark:bg-white font-sans">
+      <Toaster position="top-right" duration={3000} richColors />
+
       {/* Left Section - Image Gallery */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-slate-50">
         <div className="absolute inset-0 grid grid-cols-2 gap-0">
@@ -103,7 +123,7 @@ export default function LoginPage() {
           ))}
         </div>
 
-        <div className="absolute inset-0 flex items-end justify-start p-12 bg-linear-to-t from-slate-900/80 via-transparent to-transparent">
+        <div className="absolute inset-0 flex items-end justify-start p-12 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent">
           <div className="text-white">
             <h2 className="text-5xl font-serif font-bold mb-3 tracking-tight">
               Rwandan Artistry
@@ -114,6 +134,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
       {/* Right Section - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12">
         <div className="w-full max-w-md">
@@ -127,13 +148,13 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-12">
-            <a
-              href="/"
-              className="text-sm flex items-center gap-x-4 font-bold text-slate-700 hover:text-slate-900 hover:underline hover:decoration-slate-900"
+            <button
+              onClick={() => navigate("/")}
+              className="text-sm flex items-center gap-x-4 font-bold text-slate-700 hover:text-slate-900 hover:underline"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4 inline-block ml-1"
+                className="w-4 h-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -146,7 +167,7 @@ export default function LoginPage() {
                 />
               </svg>
               Back to Home
-            </a>
+            </button>
           </div>
 
           <Card className="border border-slate-200 shadow-none rounded-none">
@@ -169,7 +190,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="email"
-                    className="text-xs font-bold uppercase tracking-wider text-slate-700 font-sans"
+                    className="text-xs font-bold uppercase tracking-wider text-slate-700"
                   >
                     Email
                   </Label>
@@ -182,24 +203,23 @@ export default function LoginPage() {
                       setCredentials({ ...credentials, email: e.target.value })
                     }
                     placeholder="artist@rwanda.art"
-                    className="border-slate-200 rounded-none focus-visible:ring-slate-900 font-sans"
+                    className="border-slate-200 rounded-none focus-visible:ring-slate-900"
                   />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label
                       htmlFor="password"
-                      className="text-xs font-bold uppercase tracking-wider text-slate-700 font-sans"
+                      className="text-xs font-bold uppercase tracking-wider text-slate-700"
                     >
                       Password
                     </Label>
-
-                    <a
-                      href="#"
-                      className="text-[10px] uppercase font-bold text-slate-400 hover:text-slate-900 transition-colors font-sans"
+                    <button
+                      type="button"
+                      className="text-[10px] uppercase font-bold text-slate-400 hover:text-slate-900"
                     >
                       Forgot?
-                    </a>
+                    </button>
                   </div>
                   <Input
                     id="password"
@@ -212,37 +232,30 @@ export default function LoginPage() {
                         password: e.target.value,
                       })
                     }
-                    className="border-slate-200 rounded-none focus-visible:ring-slate-900 font-sans"
+                    className="border-slate-200 rounded-none focus-visible:ring-slate-900"
                   />
                 </div>
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-slate-900 hover:bg-black text-white py-6 rounded-none font-sans text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300"
+                  className="w-full bg-slate-900 hover:bg-black text-white py-6 rounded-none font-sans text-xs font-bold uppercase tracking-[0.2em] transition-all"
                 >
                   {isLoading ? "Verifying..." : "Login"}
                 </Button>
               </form>
-
-              <div className="mt-6 pt-6 border-t border-slate-100">
-                <p className="text-xs text-slate-500 text-center font-sans uppercase tracking-widest">
+              <div className="mt-6 pt-6 border-t border-slate-100 text-center">
+                <p className="text-xs text-slate-500 uppercase tracking-widest">
                   New to the Artisan?{" "}
-                  <a
-                    href="/register"
+                  <button
+                    onClick={() => navigate("/register")}
                     className="font-bold text-slate-900 hover:underline"
                   >
                     Register
-                  </a>
+                  </button>
                 </p>
               </div>
             </CardContent>
           </Card>
-
-          <div className="mt-8 text-center">
-            <p className="text-[9px] tracking-[0.3em] uppercase text-slate-300 font-sans font-medium">
-              Authenticated Connection • Stripe Secured
-            </p>
-          </div>
         </div>
       </div>
     </div>

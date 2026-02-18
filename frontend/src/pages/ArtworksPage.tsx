@@ -138,7 +138,7 @@ export default function ArtworksPage() {
                         {work.title}
                       </h3>
                       <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-4">
-                        {work.artist?.name || "Unknown Artist"}
+                        {work.author?.name || "Unknown Artist"}
                       </p>
                       <div className="flex gap-4">
                         <span className="text-[9px] text-slate-400 uppercase tracking-tighter">

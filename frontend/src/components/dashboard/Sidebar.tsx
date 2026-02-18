@@ -1,20 +1,24 @@
 import { cn } from "@/lib/utils";
 import { NAVIGATION_CONFIG } from "@/utils/consts";
 import { LogOut, Settings } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import AuthService from "@/api/services/authService";
-import { useNavigate, useLocation } from "react-router";
-import { Link } from "react-router";
+import { useAuth } from "@/context/AuthContext"; // ✅ CORRECT SOURCE
+import { useNavigate, useLocation, Link } from "react-router";
 
 export function Sidebar({ className }: { className?: string }) {
-  const { user, loading } = useAuth();
-  const userRole = user?.role || "editor";
-  const navigate = useNavigate();
+  const { user, loading, logout } = useAuth();
+  const userRole = user?.role || "BUYER";
 
+  const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const image = import.meta.env.BACKEND_IMAGE_URL || "http://localhost:5000";
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+  const handleLogout = () => {
+    logout(); // clears context + storage
+    navigate("/login", { replace: true });
+  };
 
   return (
     <aside
@@ -23,22 +27,22 @@ export function Sidebar({ className }: { className?: string }) {
         className,
       )}
     >
-      {/* Brand Section - Serif & Documentation Label */}
+      {/* BRAND */}
       <div className="p-8 mb-4">
         <div className="flex flex-col">
-          <a
-            href="/"
+          <Link
+            to="/"
             className="font-serif font-bold text-slate-900 dark:text-slate-100 tracking-tight text-3xl leading-none"
           >
             Craftfolio
-          </a>
+          </Link>
           <p className="text-[9px] uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500 font-bold mt-2.5">
             Documentation System
           </p>
         </div>
       </div>
 
-      {/* Nav Content */}
+      {/* NAVIGATION */}
       <nav className="flex-1 px-8 space-y-12 overflow-y-auto scrollbar-none">
         {!loading &&
           NAVIGATION_CONFIG.filter((section) =>
@@ -48,15 +52,12 @@ export function Sidebar({ className }: { className?: string }) {
               {section.items
                 .filter((item) => item.roles.includes(userRole))
                 .map((item) => {
-                  const isActive =
-                    item.path === "/dashboard"
-                      ? currentPath === "/dashboard"
-                      : currentPath.startsWith(item.path);
+                  const isActive = item.path === currentPath;
 
                   return (
                     <Link
-                      to={item.disabled ? "#" : item.path}
                       key={item.id}
+                      to={item.disabled ? "#" : item.path}
                       className="block"
                     >
                       <NavItem
@@ -73,20 +74,24 @@ export function Sidebar({ className }: { className?: string }) {
           ))}
       </nav>
 
-      {/* Footer Profile - Squared & High Contrast */}
+      {/* FOOTER / PROFILE */}
       <div className="p-6 mt-auto">
         <div className="border border-slate-200 dark:border-white/[0.05] bg-slate-50/50 dark:bg-white/[0.01] p-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="relative shrink-0">
               <img
                 src={
-                  image + user?.profile?.profile_picture ||
-                  `https://ui-avatars.com/api/?name=${user?.name || "User"}&background=0f172a&color=fff&bold=true`
+                  user?.profile?.profile_picture
+                    ? `${backendUrl}${user.profile.profile_picture}`
+                    : `https://ui-avatars.com/api/?name=${
+                        user?.name || "User"
+                      }&background=0f172a&color=fff&bold=true`
                 }
                 alt="avatar"
                 className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 object-cover grayscale"
               />
             </div>
+
             <div className="flex flex-col overflow-hidden">
               <span className="text-[13px] font-serif font-bold text-slate-900 dark:text-slate-100 truncate">
                 {user?.name || "Verifying..."}
@@ -104,7 +109,7 @@ export function Sidebar({ className }: { className?: string }) {
             />
             <ProfileBtn
               icon={<LogOut size={14} />}
-              onClick={() => AuthService.logout()}
+              onClick={handleLogout}
               className="text-rose-500 hover:bg-rose-100 hover:text-rose-900 dark:hover:bg-rose-500 border-transparent"
             />
           </div>
@@ -114,10 +119,20 @@ export function Sidebar({ className }: { className?: string }) {
   );
 }
 
-function NavSection({ label, children }: any) {
+/* ----------------------- */
+/* SUB COMPONENTS */
+/* ----------------------- */
+
+function NavSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-4">
-      <h3 className="text-[10px] font-bold text-slate-900 dark:text-slate-500 uppercase tracking-[0.3em] font-sans">
+      <h3 className="text-[10px] font-bold text-slate-900 dark:text-slate-500 uppercase tracking-[0.3em]">
         {label}
       </h3>
       <div className="space-y-1">{children}</div>
@@ -125,10 +140,20 @@ function NavSection({ label, children }: any) {
   );
 }
 
-function NavItem({ icon, label, active, badge, onClick }: any) {
+function NavItem({
+  icon,
+  label,
+  active,
+  badge,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  badge?: string | number;
+  disabled?: boolean;
+}) {
   return (
     <div
-      onClick={onClick}
       className={cn(
         "group flex items-center justify-between py-2 cursor-pointer transition-all duration-300 border-b border-transparent",
         active
@@ -139,7 +164,6 @@ function NavItem({ icon, label, active, badge, onClick }: any) {
       <div className="flex items-center gap-4">
         <span
           className={cn(
-            "transition-colors duration-300",
             active
               ? "text-slate-900 dark:text-white"
               : "text-slate-300 dark:text-slate-700",
@@ -151,6 +175,7 @@ function NavItem({ icon, label, active, badge, onClick }: any) {
           {label}
         </span>
       </div>
+
       {badge && (
         <span className="text-[10px] font-mono opacity-50">({badge})</span>
       )}
@@ -158,7 +183,15 @@ function NavItem({ icon, label, active, badge, onClick }: any) {
   );
 }
 
-function ProfileBtn({ icon, className, onClick }: any) {
+function ProfileBtn({
+  icon,
+  className,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+}) {
   return (
     <button
       onClick={onClick}

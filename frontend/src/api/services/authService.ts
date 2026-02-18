@@ -48,12 +48,29 @@ const AuthService = {
     return response.data;
   },
 
+  async updateSettings(settingsData: {
+    name?: string;
+    email?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) {
+    // Note: This is JSON, not FormData, as we aren't sending files here
+    const response = await apiClient.patch(
+      "/auth/update-settings",
+      settingsData,
+    );
+
+    if (response.data.user) {
+      localStorage.setItem("user_data", JSON.stringify(response.data.user));
+    }
+
+    return response.data;
+  },
+
   logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user_data");
     localStorage.removeItem("cart");
-
-    window.location.replace("/login");
   },
 };
 
