@@ -9,6 +9,14 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
+      author_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "users", // make sure this matches your users table name
+          key: "user_id",
+        },
+      },
       title: { type: Sequelize.STRING, allowNull: false },
       description: { type: Sequelize.TEXT },
       type: {
@@ -55,6 +63,12 @@ module.exports = {
       artwork_id: {
         type: Sequelize.INTEGER,
         references: { model: "artworks", key: "artwork_id" },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      },
+      author_id: {
+        type: Sequelize.INTEGER,
+        references: { model: "users", key: "user_id" },
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },

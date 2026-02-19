@@ -29,7 +29,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/store", express.static(path.join(__dirname, "uploads")));
 
 // Global Error Handler should be near the bottom
-app.use(GlobalErrorHandler);
 
 const port = process.env.PORT || 4000;
 
@@ -43,11 +42,14 @@ app.get("/", (req, res) => {
 });
 
 app.use((req, res, next) => {
+  console.log(req.method, req.originalUrl);
+
   res.status(404).json({
     success: false,
     message: `Route not found: ${req.originalUrl}`,
   });
 });
+app.use(GlobalErrorHandler);
 
 async function bootstrap() {
   try {

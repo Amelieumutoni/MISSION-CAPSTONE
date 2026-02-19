@@ -9,6 +9,14 @@ const Exhibition = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
+    author_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "users", // make sure this matches your users table name
+        key: "user_id",
+      },
+    },
     title: {
       type: DataTypes.STRING(255),
       allowNull: false,
@@ -62,6 +70,12 @@ Exhibition.associate = (models) => {
   Exhibition.hasOne(models.LiveStream, {
     foreignKey: "exhibition_id",
     as: "live_details",
+  });
+
+  Exhibition.belongsTo(models.User, {
+    foreignKey: "author_id", // The column in Exhibitions
+    targetKey: "user_id", // The column in Users
+    as: "author",
   });
 };
 

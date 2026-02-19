@@ -33,6 +33,10 @@ import AdminOrdersPage from "./pages/dashboard/OrdersPage";
 import ArtistFinancialsPage from "./pages/dashboard/FinancePage";
 import ArtistDashboardOverview from "./pages/dashboard/IndexPage";
 import AdminDashboardOverview from "./pages/dashboard/admin/IndexPage";
+import ExhibitionManagement from "./pages/dashboard/exhibitions/Exhibitions";
+import NewExhibition from "./pages/dashboard/exhibitions/ExhibitionsNew";
+import ExhibitionDetail from "./pages/dashboard/exhibitions/ExhibitionDetails";
+import ExhibitionEdit from "./pages/dashboard/exhibitions/EditExhibition";
 
 function DashboardIndex() {
   const { user } = useAuth();
@@ -97,6 +101,13 @@ export default function App() {
               <Route path="/dashboard" element={<AdminDashboard />}>
                 <Route path="finance" element={<ArtistFinancialsPage />} />
                 <Route path="artworks/new" element={<CreateArtworkPage />} />
+                <Route path="exhibitions" element={<ExhibitionManagement />} />
+                <Route path="exhibitions/new" element={<NewExhibition />} />
+                <Route path="exhibitions/:id" element={<ExhibitionDetail />} />
+                <Route
+                  path="exhibitions/edit/:id"
+                  element={<ExhibitionEdit />}
+                />
               </Route>
             </Route>
 

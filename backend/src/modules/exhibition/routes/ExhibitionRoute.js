@@ -71,9 +71,164 @@ const uploadBanner = createUploader({ folder: "exhibitions" });
  *     description: Exhibition management
  */
 
-/* ======================================================
-   CREATE EXHIBITION (AUTHOR)
-   ====================================================== */
+/**
+ * @swagger
+ * /exhibitions/public:
+ *   get:
+ *     summary: Get published exhibitions
+ *     tags: [Exhibitions]
+ *     responses:
+ *       200:
+ *         description: Public exhibitions list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Exhibition'
+ *       500:
+ *         description: Server error
+ */
+router.get("/public", exhibitionController.getPublicExhibitions);
+
+router.get(
+  "/my-exhibitions",
+  authGuard("AUTHOR"),
+  exhibitionController.getMyExhibitions,
+);
+
+router.get(
+  "/my-exhibitions/:exhibitionId",
+  authGuard("AUTHOR"),
+  exhibitionController.getExhibitionByIdByMe,
+);
+
+/**
+ * @swagger
+ * /exhibitions/public/{exhibitionId}:
+ *   get:
+ *     summary: Get published exhibition by ID
+ *     tags: [Exhibitions]
+ *     parameters:
+ *       - in: path
+ *         name: exhibitionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Exhibition found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Exhibition'
+ *       404:
+ *         description: Exhibition not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ */
+router.get("/public/:exhibitionId", exhibitionController.getExhibitionById);
+
+/**
+ * @swagger
+ * /exhibitions/{exhibitionId}/visibility:
+ *   patch:
+ *     summary: Publish or unpublish exhibition
+ *     tags: [Exhibitions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: exhibitionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Visibility updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Exhibition not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ */
+router.patch(
+  "/:exhibitionId/visibility",
+  authGuard("ADMIN"),
+  exhibitionController.toggleVisibility,
+);
+
+router.patch(
+  "/:exhibitionId",
+  authGuard("AUTHOR"),
+  uploadBanner.single("banner_image"),
+  exhibitionController.updateExhibition,
+);
+
+/**
+ * @swagger
+ * /exhibitions/{exhibitionId}/artworks:
+ *   put:
+ *     summary: Assign artworks to exhibition
+ *     tags: [Exhibitions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: exhibitionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [artworkIds]
+ *             properties:
+ *               artworkIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Artworks assigned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Exhibition not found
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  "/:exhibitionId/artwork",
+  authGuard("AUTHOR"),
+  exhibitionController.assignArtworks,
+);
+
+router.post(
+  "/:exhibitionId/start-stream",
+  authGuard("AUTHOR"),
+  exhibitionController.startLiveStream,
+);
 
 /**
  * @swagger
@@ -132,154 +287,6 @@ router.post(
   authGuard("AUTHOR"),
   uploadBanner.single("banner"),
   exhibitionController.createExhibition,
-);
-
-/* ======================================================
-   TOGGLE VISIBILITY (ADMIN)
-   ====================================================== */
-
-/**
- * @swagger
- * /exhibitions/{exhibitionId}/visibility:
- *   patch:
- *     summary: Publish or unpublish exhibition
- *     tags: [Exhibitions]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: exhibitionId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Visibility updated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
- *       403:
- *         description: Forbidden
- *       404:
- *         description: Exhibition not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Server error
- */
-router.patch(
-  "/:exhibitionId/visibility",
-  authGuard("ADMIN"),
-  exhibitionController.toggleVisibility,
-);
-
-/**
- * @swagger
- * /exhibitions/{exhibitionId}/artworks:
- *   put:
- *     summary: Assign artworks to exhibition
- *     tags: [Exhibitions]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: exhibitionId
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [artworkIds]
- *             properties:
- *               artworkIds:
- *                 type: array
- *                 items:
- *                   type: string
- *     responses:
- *       200:
- *         description: Artworks assigned
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
- *       400:
- *         description: Invalid request
- *       404:
- *         description: Exhibition not found
- *       500:
- *         description: Server error
- */
-router.put(
-  "/:exhibitionId/artworks",
-  authGuard("AUTHOR"),
-  exhibitionController.assignArtworks,
-);
-
-// Getting a list of exhibitions by public
-
-/**
- * @swagger
- * /exhibitions/public:
- *   get:
- *     summary: Get published exhibitions
- *     tags: [Exhibitions]
- *     responses:
- *       200:
- *         description: Public exhibitions list
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Exhibition'
- *       500:
- *         description: Server error
- */
-router.get("/public", exhibitionController.getPublicExhibitions);
-
-// Getting a single exhibition by public
-
-/**
- * @swagger
- * /exhibitions/public/{exhibitionId}:
- *   get:
- *     summary: Get published exhibition by ID
- *     tags: [Exhibitions]
- *     parameters:
- *       - in: path
- *         name: exhibitionId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Exhibition found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Exhibition'
- *       404:
- *         description: Exhibition not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Server error
- */
-router.get("/public/:exhibitionId", exhibitionController.getExhibitionById);
-
-router.post(
-  "/:exhibitionId/start-stream",
-  authGuard("AUTHOR"),
-  exhibitionController.startLiveStream,
 );
 
 module.exports = router;
