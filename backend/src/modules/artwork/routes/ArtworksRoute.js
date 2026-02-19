@@ -129,7 +129,7 @@ const uploadMedia = createUploader({
 router.post(
   "/",
   authGuard("AUTHOR"),
-  uploadArtwork.single("main_image"),
+  uploadArtwork.single("main_image", 20),
   artworkController.createArtwork,
 );
 
@@ -229,7 +229,7 @@ router.get("/:artworkId", artworkController.getArtworkById);
 router.patch(
   "/:artworkId",
   authGuard("AUTHOR"),
-  uploadArtwork.single("main_image"),
+  uploadArtwork.single("main_image", 30),
   artworkController.updateArtwork,
 );
 

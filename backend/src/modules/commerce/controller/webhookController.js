@@ -41,93 +41,77 @@ exports.handleStripeWebhook = async (req, res) => {
 async function handleSuccessfulPayment(session) {
   const orderId = session.metadata.order_id;
   const transaction = await sequelize.transaction();
-
   try {
-    const order = await Order.findByPk(orderId, { transaction });
-    if (order && order.status !== "PAID") {
-      await order.update({ status: "PAID" }, { transaction });
-
-      const items = await OrderItem.findAll({
-        where: { order_id: orderId },
-        transaction,
-      });
-      for (const item of items) {
-        const updatedArtwork = await Artwork.decrement("stock_quantity", {
-          by: item.quantity,
-          where: { artwork_id: item.artwork_id },
-          transaction,
-        });
-
-        const artwork = await Artwork.findByPk(item.artwork_id, {
-          transaction,
-        });
-
-        if (artwork && artwork.stock_quantity <= 0) {
-          await artwork.update(
-            {
-              status: "ARCHIVED",
-              stock_quantity: 0,
-            },
-            { transaction },
-          );
-        }
-      }
-      await transaction.commit();
-      console.log(`Order ${orderId} successfully paid and stock updated.`);
-    }
-  } catch (error) {
-    await transaction.rollback();
-    console.error(`Error processing success webhook: ${error.message}`);
-  }
-}
-
-async function handleFailedPayment(session) {
-  const orderId = session.metadata?.order_id;
-  if (!orderId) return;
-
-  const transaction = await sequelize.transaction();
-
-  try {
-    // 1. Find the order and its items
     const order = await Order.findByPk(orderId, {
-      include: [{ model: OrderItem }],
+      include: [{ model: OrderItem, as: "items" }],
       transaction,
     });
 
-    if (!order || order.status === "FAILED") {
+    if (!order || order.status === "PAID") {
       await transaction.rollback();
       return;
     }
 
-    // 2. Increment the stock back for each item
-    for (const item of order.OrderItems) {
-      await Artwork.increment("stock_quantity", {
-        by: item.quantity,
-        where: { artwork_id: item.artwork_id },
-        transaction,
-      });
-
-      // If the artwork was ARCHIVED because stock hit 0, bring it back to AVAILABLE
+    // Decrement stock and mark SOLD only on successful payment
+    for (const item of order.items) {
       const artwork = await Artwork.findByPk(item.artwork_id, { transaction });
-      if (
-        artwork &&
-        artwork.status === "ARCHIVED" &&
-        artwork.stock_quantity > 0
-      ) {
-        await artwork.update({ status: "AVAILABLE" }, { transaction });
-      }
+      if (!artwork) continue;
+
+      const newStock = artwork.stock_quantity - item.quantity;
+
+      await artwork.update(
+        {
+          stock_quantity: Math.max(0, newStock),
+          status: newStock <= 0 ? "SOLD" : "AVAILABLE",
+        },
+        { transaction },
+      );
     }
 
-    // 3. Mark the order as FAILED
-    await order.update({ status: "FAILED" }, { transaction });
-
+    await order.update({ status: "PAID" }, { transaction });
     await transaction.commit();
-    console.log(`Order ${orderId} failed: Stock restored and status updated.`);
+    console.log(`Order ${orderId} paid — stock updated.`);
   } catch (error) {
-    if (transaction) await transaction.rollback();
-    console.error(
-      `Error processing failure webhook for Order ${orderId}:`,
-      error.message,
-    );
+    await transaction.rollback();
+    console.error(`Webhook success error: ${error.message}`);
+  }
+}
+
+async function handleSuccessfulPayment(session) {
+  const orderId = session.metadata.order_id;
+  const transaction = await sequelize.transaction();
+  try {
+    const order = await Order.findByPk(orderId, {
+      include: [{ model: OrderItem, as: "items" }],
+      transaction,
+    });
+
+    if (!order || order.status === "PAID") {
+      await transaction.rollback();
+      return;
+    }
+
+    // Decrement stock and mark SOLD only on successful payment
+    for (const item of order.items) {
+      const artwork = await Artwork.findByPk(item.artwork_id, { transaction });
+      if (!artwork) continue;
+
+      const newStock = artwork.stock_quantity - item.quantity;
+
+      await artwork.update(
+        {
+          stock_quantity: Math.max(0, newStock),
+          status: newStock <= 0 ? "SOLD" : "AVAILABLE",
+        },
+        { transaction },
+      );
+    }
+
+    await order.update({ status: "PAID" }, { transaction });
+    await transaction.commit();
+    console.log(`Order ${orderId} paid — stock updated.`);
+  } catch (error) {
+    await transaction.rollback();
+    console.error(`Webhook success error: ${error.message}`);
   }
 }

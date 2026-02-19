@@ -57,7 +57,7 @@ export default function ShopPage() {
         if (response?.data) {
           // STRICT FILTER: Only show AVAILABLE works to be sold
           const availableOnly = response.data.filter(
-            (w: Artwork) => w.status === "AVAILABLE",
+            (w: Artwork) => w.status.toUpperCase() === "AVAILABLE",
           );
           setArtworks(availableOnly);
         }

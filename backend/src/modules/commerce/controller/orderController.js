@@ -4,7 +4,6 @@ const { Op } = require("sequelize");
 // Creating an order
 exports.createOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
-
   try {
     const { items, shipping_address } = req.body;
 
@@ -19,44 +18,28 @@ exports.createOrder = async (req, res) => {
     const orderItemsToCreate = [];
 
     for (const item of items) {
-      // 1. Fetch artwork WITHIN the transaction to prevent race conditions
       const artwork = await Artwork.findByPk(item.artwork_id, { transaction });
 
-      if (!artwork) {
-        throw new Error(`Artwork with ID ${item.artwork_id} not found.`);
-      }
-
-      // 2. Check stock
+      if (!artwork) throw new Error(`Artwork ${item.artwork_id} not found.`);
+      if (artwork.status !== "AVAILABLE")
+        throw new Error(`"${artwork.title}" is no longer available.`);
       if (artwork.stock_quantity < item.quantity) {
         throw new Error(
-          `Insufficient stock for: ${artwork.title}. Available: ${artwork.stock_quantity}`,
+          `Insufficient stock for "${artwork.title}". Available: ${artwork.stock_quantity}`,
         );
-      }
-
-      // 3. REDUCE STOCK IMMEDIATELY
-      // This "locks" the item for the buyer
-      await artwork.decrement("stock_quantity", {
-        by: item.quantity,
-        transaction,
-      });
-
-      // 4. Update status if sold out
-      // Refresh local artwork instance to check new stock level
-      const updatedStock = artwork.stock_quantity - item.quantity;
-      if (updatedStock <= 0) {
-        await artwork.update({ status: "SOLD" }, { transaction });
       }
 
       const itemPrice = parseFloat(artwork.price);
       calculatedTotal += itemPrice * item.quantity;
 
-      // Prepare Stripe line item
       stripeLineItems.push({
         price_data: {
           currency: "usd",
           product_data: {
             name: artwork.title,
-            description: artwork.description?.substring(0, 100),
+            description:
+              artwork.description?.trim() ||
+              `Original artwork — ${artwork.technique}`,
             images: artwork.main_image.startsWith("http")
               ? [artwork.main_image]
               : [
@@ -75,7 +58,7 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // 5. Create Parent Order
+    // Create order as PENDING — no stock touched yet
     const newOrder = await Order.create(
       {
         buyer_id: req.user.id,
@@ -86,26 +69,21 @@ exports.createOrder = async (req, res) => {
       { transaction },
     );
 
-    // 6. Create OrderItems
     await OrderItem.bulkCreate(
       orderItemsToCreate.map((oi) => ({ ...oi, order_id: newOrder.order_id })),
       { transaction },
     );
 
-    // 7. Initialize Stripe Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: stripeLineItems,
       mode: "payment",
       success_url: `${process.env.FRONTEND_URL}/cart?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/cart?order_id=${newOrder.order_id}`,
-      metadata: {
-        order_id: newOrder.order_id.toString(),
-      },
+      metadata: { order_id: newOrder.order_id.toString() },
     });
 
     await newOrder.update({ stripe_session_id: session.id }, { transaction });
-
     await transaction.commit();
 
     res.status(201).json({
@@ -114,8 +92,7 @@ exports.createOrder = async (req, res) => {
       order_id: newOrder.order_id,
     });
   } catch (error) {
-    // If anything fails (including Stripe), the stock decrement is reversed automatically
-    if (transaction) await transaction.rollback();
+    await transaction.rollback();
     res.status(400).json({ success: false, message: error.message });
   }
 };

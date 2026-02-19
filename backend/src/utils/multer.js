@@ -5,7 +5,7 @@ const fs = require("fs");
 function createUploader({
   folder,
   allowedTypes = ["image/jpeg", "image/png"],
-  maxSize = 4 * 1024 * 1024,
+  maxSize = 20 * 1024 * 1024,
 }) {
   const uploadDir = path.join("uploads", folder);
   if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
