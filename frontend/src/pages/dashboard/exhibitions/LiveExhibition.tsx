@@ -26,6 +26,7 @@ import {
   Wifi,
   WifiOff,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { livekitToken } from "@/api/services/liveStream";
@@ -135,6 +136,7 @@ export default function ArtistLivePage() {
   const [liveKitConnected, setLiveKitConnected] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEnding, setIsEnding] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -279,11 +281,17 @@ export default function ArtistLivePage() {
   };
 
   const endStream = async () => {
-    try {
-      setConnectionStatus("connecting");
+    if (isEnding) return; // Prevent multiple end attempts
 
-      // 1. Stop recording and upload if we were recording
-      if (mediaRecorderRef.current && recordedChunks.current.length > 0) {
+    setIsEnding(true);
+    const toastId = toast.loading("Ending stream...");
+
+    try {
+      // 1. Stop recording if active
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
         mediaRecorderRef.current.stop();
 
         // Wait for final data
@@ -296,11 +304,11 @@ export default function ArtistLivePage() {
                 });
 
                 try {
-                  // Convert blob to File for upload
                   const file = new File([blob], `stream-${Date.now()}.webm`, {
                     type: "video/webm",
                   });
                   await ExhibitionService.uploadRecording(id!, file);
+                  console.log("Recording uploaded successfully");
                 } catch (uploadErr) {
                   console.error("Failed to upload recording:", uploadErr);
                 }
@@ -315,15 +323,35 @@ export default function ArtistLivePage() {
 
       // 2. Stop all media tracks
       if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((t) => t.stop());
+        localStreamRef.current.getTracks().forEach((t) => {
+          t.stop();
+          console.log("Track stopped:", t.kind);
+        });
         localStreamRef.current = null;
       }
 
-      // 3. Notify backend to end stream
-      socketRef.current?.emit("artist-end-stream", { exhibitionId: id });
+      // 3. Notify backend via socket
+      if (socketRef.current) {
+        socketRef.current.emit("artist-end-stream", { exhibitionId: id });
+        console.log("Socket event emitted: artist-end-stream");
+      }
 
-      // 4. Update backend via REST API
-      await ExhibitionService.endLiveStream(id!);
+      // 4. Update backend via REST API with retry
+      let retries = 3;
+      let success = false;
+
+      while (retries > 0 && !success) {
+        try {
+          await ExhibitionService.endLiveStream(id!);
+          success = true;
+          console.log("REST API call successful: endLiveStream");
+        } catch (err) {
+          retries--;
+          console.log(`REST API call failed, retries left: ${retries}`);
+          if (retries === 0) throw err;
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
 
       // 5. Clear LiveKit connection
       setToken(null);
@@ -331,12 +359,17 @@ export default function ArtistLivePage() {
       setLiveKitConnected(false);
       setConnectionStatus("idle");
 
-      toast.success("Stream ended and recording saved");
-      navigate(`/dashboard/exhibitions/${id}`);
+      toast.success("Stream ended successfully", { id: toastId });
+
+      // Navigate after a short delay to ensure all cleanup is done
+      setTimeout(() => {
+        navigate(`/dashboard/exhibitions/${id}`, { replace: true });
+      }, 500);
     } catch (err) {
-      toast.error("Error ending stream");
-      console.error(err);
+      console.error("Error ending stream:", err);
+      toast.error("Failed to end stream properly", { id: toastId });
       setConnectionStatus("live");
+      setIsEnding(false);
     }
   };
 
@@ -530,7 +563,7 @@ export default function ArtistLivePage() {
             {!isLive && !isArchived ? (
               <Button
                 onClick={startStream}
-                disabled={connectionStatus === "connecting"}
+                disabled={connectionStatus === "connecting" || isEnding}
                 className="rounded-none px-10 py-6 uppercase text-[10px] tracking-widest font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
               >
                 <Radio size={14} className="mr-2" />
@@ -541,10 +574,20 @@ export default function ArtistLivePage() {
             ) : isLive && !isArchived ? (
               <Button
                 onClick={endStream}
-                className="rounded-none px-10 py-6 uppercase text-[10px] tracking-widest font-bold bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-700"
+                disabled={isEnding}
+                className="rounded-none px-10 py-6 uppercase text-[10px] tracking-widest font-bold bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-700 disabled:opacity-50"
               >
-                <PhoneOff size={14} className="mr-2" />
-                End Stream
+                {isEnding ? (
+                  <>
+                    <RefreshCw size={14} className="mr-2 animate-spin" />
+                    Ending...
+                  </>
+                ) : (
+                  <>
+                    <PhoneOff size={14} className="mr-2" />
+                    End Stream
+                  </>
+                )}
               </Button>
             ) : null}
           </div>

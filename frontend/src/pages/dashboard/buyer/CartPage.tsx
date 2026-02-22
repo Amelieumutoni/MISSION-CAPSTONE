@@ -9,8 +9,11 @@ import {
   CreditCard,
   ShoppingBag,
   CheckCircle2,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { OrderService } from "@/api/services/orderService";
 import { toast, Toaster } from "sonner";
 
@@ -22,6 +25,8 @@ export default function CartPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [addressError, setAddressError] = useState("");
 
   const total = getCartTotal();
 
@@ -30,13 +35,10 @@ export default function CartPage() {
     const sessionId = searchParams.get("session_id");
     const orderId = searchParams.get("order_id");
 
-    // If neither exists, do nothing
     if (!sessionId && !orderId) return;
 
     const handleStripeReturn = async () => {
       if (sessionId) {
-        // IMPORTANT: We only want to clear the cart once.
-        // We can check if the cart has items before clearing to break the loop.
         if (cart.length > 0) {
           clearCart();
           toast.success("Purchase complete!", {
@@ -56,19 +58,37 @@ export default function CartPage() {
         } catch (err) {
           console.error("Cancel failed", err);
         } finally {
-          // Navigate immediately to remove the order_id from URL and stop the loop
           navigate("/cart", { replace: true });
         }
       }
     };
 
     handleStripeReturn();
-    // Remove clearCart and cart from dependencies if they cause instability,
-    // or use a ref to track if the action has already been performed.
-  }, [searchParams, navigate]); // Removed clearCart and cart to prevent re-triggering
+  }, [searchParams, navigate, cart.length, clearCart]);
+
+  const validateAddress = (address: string) => {
+    if (!address.trim()) {
+      return "Shipping address is required";
+    }
+    if (address.trim().length < 5) {
+      return "Please enter a valid address";
+    }
+    return "";
+  };
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
+
+    // Validate shipping address
+    const error = validateAddress(shippingAddress);
+    if (error) {
+      setAddressError(error);
+      toast.error("Shipping address required", {
+        description: "Please enter your shipping address to continue.",
+      });
+      return;
+    }
+
     setIsCheckingOut(true);
     try {
       const payload = {
@@ -76,13 +96,12 @@ export default function CartPage() {
           artwork_id: item.artwork_id,
           quantity: item.quantity || 1,
         })),
-        shipping_address: "Kigali, Rwanda",
+        shipping_address: shippingAddress.trim(),
       };
 
       const response = await OrderService.createOrder(payload);
 
       if (response.success && response.checkout_url) {
-        // Full redirect to Stripe hosted checkout
         window.location.href = response.checkout_url;
       }
     } catch (error: any) {
@@ -91,10 +110,15 @@ export default function CartPage() {
       );
       setIsCheckingOut(false);
     }
-    // Note: don't setIsCheckingOut(false) on success — page is navigating away
   };
 
-  // ── SUCCESS LOADING VIEW (session_id present in URL) ──────────────────────
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setShippingAddress(e.target.value);
+    if (addressError) {
+      setAddressError(validateAddress(e.target.value));
+    }
+  };
+
   if (searchParams.get("session_id")) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4 animate-in zoom-in-95 duration-500">
@@ -110,7 +134,6 @@ export default function CartPage() {
     );
   }
 
-  // ── EMPTY STATE VIEW ──────────────────────────────────────────────────────
   if (cart.length === 0) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-700">
@@ -136,7 +159,6 @@ export default function CartPage() {
     );
   }
 
-  // ── MAIN CART VIEW ────────────────────────────────────────────────────────
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 lg:py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <Toaster position="top-right" richColors />
@@ -239,9 +261,42 @@ export default function CartPage() {
         {/* ── ORDER SUMMARY ── */}
         <div className="lg:col-span-4">
           <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 p-10 sticky top-32">
-            <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-400 mb-10 border-b border-slate-200 dark:border-white/10 pb-4">
+            <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-400 mb-6 border-b border-slate-200 dark:border-white/10 pb-4">
               Order Summary
             </h2>
+
+            {/* Shipping Address Input */}
+            <div className="mb-8 space-y-3">
+              <Label
+                htmlFor="shipping-address"
+                className="text-[10px] uppercase tracking-widest font-bold text-slate-500 flex items-center gap-2"
+              >
+                <MapPin size={12} className="text-slate-400" />
+                Shipping Address
+              </Label>
+              <div className="space-y-2">
+                <Input
+                  id="shipping-address"
+                  placeholder="Enter your full address (e.g., Kigali, Rwanda)"
+                  value={shippingAddress}
+                  onChange={handleAddressChange}
+                  className={`rounded-none border ${
+                    addressError
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : "border-slate-200 dark:border-white/10 focus-visible:ring-slate-500"
+                  } bg-white dark:bg-white/5 text-sm py-6`}
+                />
+                {addressError && (
+                  <p className="text-[10px] text-red-500 flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-red-500" />
+                    {addressError}
+                  </p>
+                )}
+                <p className="text-[8px] text-slate-400 italic">
+                  Your artwork will be shipped to this address upon purchase
+                </p>
+              </div>
+            </div>
 
             <div className="space-y-6 mb-10">
               <div className="flex justify-between text-[11px] uppercase tracking-widest">

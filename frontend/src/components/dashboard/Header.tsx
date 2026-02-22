@@ -51,7 +51,10 @@ export function Header({ darkMode, setDarkMode }: any) {
             <div className="h-6 w-px bg-slate-200 dark:bg-white/20 mx-2 hidden sm:block" />
 
             {/* High-Contrast Action Button */}
-            <Button className="rounded-none bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-black shadow-none active:scale-[0.98] transition-all duration-300 font-sans font-bold uppercase tracking-[0.2em] text-[10px] px-6 h-10 border-none ml-2">
+            <Button
+              onClick={() => (window.location.href = "/dashboard/exhibitions")}
+              className="rounded-none bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-black shadow-none active:scale-[0.98] transition-all duration-300 font-sans font-bold uppercase tracking-[0.2em] text-[10px] px-6 h-10 border-none ml-2"
+            >
               <Plus size={14} className="mr-2 stroke-[3px]" />
               <span className="hidden sm:inline">New Exhibition</span>
             </Button>

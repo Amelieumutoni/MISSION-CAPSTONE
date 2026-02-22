@@ -432,6 +432,7 @@ exports.endLiveStream = async (req, res) => {
     );
     await exhibition.update({ status: "ARCHIVED" });
 
+    console.log(exhibitionId);
     res.status(200).json({
       success: true,
       message: "Stream ended and exhibition archived.",
