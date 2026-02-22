@@ -63,6 +63,9 @@ exports.createExhibition = async (req, res) => {
     });
 
     if (type === "LIVE") {
+      const realStreamLink = `${process.env.FRONTEND_URL}/exhibitions/${exhibition.exhibition_id}/watch`;
+      await exhibition.update({ stream_link: realStreamLink });
+
       await LiveStream.create({
         exhibition_id: exhibition.exhibition_id,
         stream_status: "IDLE",
@@ -84,22 +87,29 @@ exports.createExhibition = async (req, res) => {
 exports.toggleVisibility = async (req, res) => {
   try {
     const { exhibitionId } = req.params;
-    const { status } = req.body;
+    const { is_published } = req.body;
 
-    const exhibition = await Exhibition.findOne({
-      where: { exhibition_id: exhibitionId, author_id: req.user.id },
-    });
+    const exhibition = await Exhibition.findByPk(exhibitionId);
+    if (!exhibition) {
+      return res.status(404).json({ message: "Exhibition not found" });
+    }
 
-    if (!exhibition)
-      return res.status(404).json({ message: "Exhibition not found." });
+    if (exhibition.status === "ARCHIVED") {
+      return res
+        .status(400)
+        .json({ message: "Archived exhibitions cannot be modified" });
+    }
 
-    await exhibition.update({ status });
+    exhibition.is_published = is_published;
+    await exhibition.save();
 
-    res.status(200).json({
+    res.json({
       success: true,
-      message: `Exhibition marked as ${status}.`,
+      message: "Visibility updated",
+      data: exhibition,
     });
   } catch (err) {
+    console.error("Toggle visibility error:", err);
     res.status(500).json({ message: "Error updating exhibition status." });
   }
 };
@@ -228,13 +238,11 @@ exports.updateExhibition = async (req, res) => {
       }),
     });
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "Exhibition updated.",
-        data: exhibition,
-      });
+    return res.status(200).json({
+      success: true,
+      message: "Exhibition updated.",
+      data: exhibition,
+    });
   } catch (err) {
     console.error("Update exhibition error:", err);
     return res.status(500).json({ message: "Error updating exhibition." });
@@ -284,9 +292,12 @@ exports.getPublicExhibitions = async (req, res) => {
           through: { attributes: [] },
         },
         {
+          model: User,
+          as: "author",
+        },
+        {
           model: LiveStream,
           as: "live_details",
-          attributes: ["stream_status", "current_viewers"],
         },
       ],
     };
@@ -295,10 +306,12 @@ exports.getPublicExhibitions = async (req, res) => {
     if (type) queryOptions.where.type = type;
 
     const exhibitions = await Exhibition.findAll(queryOptions);
+
     res
       .status(200)
       .json({ success: true, count: exhibitions.length, data: exhibitions });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Error fetching public exhibitions." });
   }
 };
@@ -330,7 +343,6 @@ exports.getExhibitionById = async (req, res) => {
         {
           model: LiveStream,
           as: "live_details",
-          attributes: ["artist_peer_id", "current_viewers", "stream_status"],
         },
       ],
     });
@@ -382,5 +394,122 @@ exports.getExhibitionByIdByMe = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching exhibition details." });
+  }
+};
+
+exports.startLiveStream = async (req, res) => {
+  try {
+    const { exhibitionId } = req.params;
+    const { peerId } = req.body;
+    if (!peerId)
+      return res.status(400).json({ message: "PeerID is required." });
+    const exhibition = await Exhibition.findOne({
+      where: { exhibition_id: exhibitionId, author_id: req.user.id },
+    });
+    if (!exhibition) return res.status(404).json({ message: "Access denied." });
+    await LiveStream.update(
+      { artist_peer_id: peerId, stream_status: "STREAMING" },
+      { where: { exhibition_id: exhibitionId } },
+    );
+    await exhibition.update({ status: "LIVE" });
+    res.status(200).json({ success: true, message: "Stream started." });
+  } catch (err) {
+    res.status(500).json({ message: "Error starting stream." });
+  }
+};
+
+exports.endLiveStream = async (req, res) => {
+  try {
+    const { exhibitionId } = req.params;
+    const exhibition = await Exhibition.findOne({
+      where: { exhibition_id: exhibitionId, author_id: req.user.id },
+    });
+    if (!exhibition) return res.status(404).json({ message: "Access denied." });
+
+    await LiveStream.update(
+      { stream_status: "IDLE", current_viewers: 0, artist_peer_id: null },
+      { where: { exhibition_id: exhibitionId } },
+    );
+    await exhibition.update({ status: "ARCHIVED" });
+
+    res.status(200).json({
+      success: true,
+      message: "Stream ended and exhibition archived.",
+    });
+  } catch (err) {
+    console.error("Error ending stream:", err);
+    res.status(500).json({ message: "Error ending stream." });
+  }
+};
+
+exports.uploadRecording = async (req, res) => {
+  try {
+    const { exhibitionId } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ message: "No recording file provided." });
+    }
+
+    const recordingPath = `/store/recordings/${file.filename}`;
+
+    if (exhibitionId) {
+      const exhibition = await Exhibition.findOne({
+        where: { exhibition_id: exhibitionId, author_id: req.user.id },
+      });
+      if (exhibition) {
+        await LiveStream.update(
+          { recording_path: recordingPath },
+          { where: { exhibition_id: exhibitionId } },
+        );
+      } else {
+        console.warn(
+          "Exhibition not found for recording upload:",
+          exhibitionId,
+        );
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Recording uploaded successfully.",
+      path: recordingPath,
+    });
+  } catch (err) {
+    console.error("Error uploading recording:", err);
+    res.status(500).json({ message: "Error uploading recording." });
+  }
+};
+
+exports.adminExhibitions = async (req, res) => {
+  try {
+    const { status, type } = req.query;
+    const queryOptions = {
+      order: [["start_date", "DESC"]],
+      include: [
+        {
+          model: Artwork,
+          as: "artworks",
+          attributes: ["artwork_id", "title", "main_image"],
+          through: { attributes: [] },
+        },
+        {
+          model: LiveStream,
+          as: "live_details",
+          attributes: ["stream_status", "current_viewers"],
+        },
+      ],
+    };
+
+    if (status) queryOptions.where.status = status;
+    if (type) queryOptions.where.type = type;
+
+    const exhibitions = await Exhibition.findAll(queryOptions);
+
+    res
+      .status(200)
+      .json({ success: true, count: exhibitions.length, data: exhibitions });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching public exhibitions." });
   }
 };

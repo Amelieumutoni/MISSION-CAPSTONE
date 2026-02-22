@@ -9,7 +9,6 @@ import {
   User,
   Lock,
   Mail,
-  ShieldCheck,
   Fingerprint,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

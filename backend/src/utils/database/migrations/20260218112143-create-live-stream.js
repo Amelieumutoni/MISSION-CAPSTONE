@@ -35,6 +35,10 @@ module.exports = {
         type: Sequelize.ENUM("IDLE", "STREAMING", "DISCONNECTED"),
         defaultValue: "IDLE",
       },
+      recording_path: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,

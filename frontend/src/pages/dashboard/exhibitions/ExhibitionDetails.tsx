@@ -14,6 +14,8 @@ import {
   Eye,
   Clock,
   Plus,
+  Radio,
+  AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,33 @@ export default function ExhibitionDetail() {
     );
 
   if (!ex) return null;
+
+  // Check if exhibition can be streamed
+  const isArchived = ex.status === "ARCHIVED";
+  const canStream =
+    ex.type === "LIVE" && !isArchived && ex.is_published === true;
+
+  // Determine button state and tooltip message
+  const getStreamButtonState = () => {
+    if (isArchived) {
+      return {
+        disabled: true,
+        title: "Cannot stream - Exhibition is archived",
+      };
+    }
+    if (!ex.is_published) {
+      return {
+        disabled: true,
+        title: "Cannot stream - Exhibition must be published first",
+      };
+    }
+    return {
+      disabled: false,
+      title: "Go Live",
+    };
+  };
+
+  const streamButtonState = getStreamButtonState();
 
   return (
     <div className="min-h-screen bg-white dark:bg-transparent pb-20 transition-colors duration-300">
@@ -100,6 +129,9 @@ export default function ExhibitionDetail() {
                 >
                   {ex.is_published ? "PUBLIC" : "DRAFT"}
                 </Badge>
+                {isArchived && (
+                  <Badge className="bg-slate-600 rounded-none">ARCHIVED</Badge>
+                )}
               </div>
               <h1 className="text-4xl md:text-6xl font-serif text-white">
                 {ex.title}
@@ -160,6 +192,32 @@ export default function ExhibitionDetail() {
                     {ex.stream_link || "No link provided"}
                     {ex.stream_link && <ExternalLink size={12} />}
                   </div>
+
+                  {/* Publishing status warning */}
+                  {!ex.is_published && (
+                    <div className="flex items-start gap-2 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                      <AlertCircle
+                        size={14}
+                        className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                      />
+                      <p className="text-[9px] text-amber-700 dark:text-amber-400">
+                        Exhibition must be published before you can go live.
+                      </p>
+                    </div>
+                  )}
+
+                  {isArchived && (
+                    <div className="flex items-start gap-2 p-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <AlertCircle
+                        size={14}
+                        className="text-slate-500 flex-shrink-0 mt-0.5"
+                      />
+                      <p className="text-[9px] text-slate-600 dark:text-slate-400">
+                        Archived exhibitions cannot be streamed.
+                      </p>
+                    </div>
+                  )}
+
                   <p className="text-[9px] text-slate-400 dark:text-slate-500 italic leading-tight">
                     Note: Ensure your live stream is set to "Public" so visitors
                     can view it.
@@ -185,15 +243,60 @@ export default function ExhibitionDetail() {
             <h4 className="text-[10px] uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 font-bold">
               Current Curation
             </h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-[10px] uppercase tracking-widest text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-              onClick={() => navigate("/dashboard/exhibitions")}
-            >
-              <Plus size={14} className="mr-2" /> Curate Artworks
-            </Button>
+            <div className="flex items-center gap-2">
+              {ex.type === "LIVE" && (
+                <Button
+                  size="sm"
+                  disabled={!canStream}
+                  className={`rounded-none text-[9px] uppercase font-bold tracking-widest ${
+                    canStream
+                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      : "bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                  }`}
+                  onClick={() => {
+                    if (canStream) {
+                      navigate(
+                        `/dashboard/exhibitions/${ex.exhibition_id}/live`,
+                      );
+                    }
+                  }}
+                  title={streamButtonState.title}
+                >
+                  <Radio
+                    size={12}
+                    className={`mr-2 ${canStream ? "animate-pulse" : ""}`}
+                  />
+                  Go Live
+                </Button>
+              )}
+
+              {/* Only show Curate Artworks button if not archived */}
+              {!isArchived && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-[10px] uppercase tracking-widest text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                  onClick={() => navigate("/dashboard/exhibitions")}
+                >
+                  <Plus size={14} className="mr-2" /> Curate Artworks
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* Publishing status message for empty curation section */}
+          {!ex.is_published && ex.artworks && ex.artworks.length > 0 && (
+            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 flex items-center gap-2">
+              <AlertCircle
+                size={14}
+                className="text-amber-600 dark:text-amber-400"
+              />
+              <p className="text-[10px] text-amber-700 dark:text-amber-400">
+                This exhibition is in DRAFT mode. Publish it to make it visible
+                to viewers and enable streaming.
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {ex.artworks?.map((art) => (

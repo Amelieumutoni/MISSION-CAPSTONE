@@ -46,7 +46,14 @@ const Exhibition = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
       validate: {
-        isUrl: true,
+        isValidUrl(value) {
+          if (value === null || value === undefined || value === "") return;
+          try {
+            new URL(value); // native URL parser — accepts localhost fine
+          } catch {
+            throw new Error("Invalid stream link URL.");
+          }
+        },
       },
     },
     start_date: { type: DataTypes.DATE },

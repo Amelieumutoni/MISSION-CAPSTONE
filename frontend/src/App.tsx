@@ -37,6 +37,11 @@ import ExhibitionManagement from "./pages/dashboard/exhibitions/Exhibitions";
 import NewExhibition from "./pages/dashboard/exhibitions/ExhibitionsNew";
 import ExhibitionDetail from "./pages/dashboard/exhibitions/ExhibitionDetails";
 import ExhibitionEdit from "./pages/dashboard/exhibitions/EditExhibition";
+import ArtistLivePage from "./pages/dashboard/exhibitions/LiveExhibition";
+import ViewerLivePage from "./pages/LiveExhibitionPage";
+import AdminExhibitionDetailPage from "./pages/dashboard/admin/ExhibitionManagement";
+import AdminArchivedContentPage from "./pages/dashboard/admin/ArchivesPage";
+import ClassificationDetailPage from "./pages/ExhibitionDetails";
 
 function DashboardIndex() {
   const { user } = useAuth();
@@ -67,6 +72,11 @@ export default function App() {
               <Route path="/artists" element={<ArtistsPage />} />
               <Route path="/artists/:id" element={<ArtistDetailPage />} />
               <Route path="/collections" element={<CollectionsPage />} />
+              <Route
+                path="/exhibitions/:id"
+                element={<ClassificationDetailPage />}
+              />
+
               <Route path="/archives" element={<ArtworksPage />} />
               <Route path="/archives/:id" element={<ArtworkDetailPage />} />
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
@@ -93,6 +103,11 @@ export default function App() {
                 <Route path="artists" element={<AdminArtistsPage />} />
                 <Route path="users/all" element={<AdminUsersPage />} />
                 <Route path="orders" element={<AdminOrdersPage />} />
+                <Route
+                  path="exhibitions/all"
+                  element={<AdminExhibitionDetailPage />}
+                />
+                <Route path="archives" element={<AdminArchivedContentPage />} />
               </Route>
             </Route>
 
@@ -108,9 +123,14 @@ export default function App() {
                   path="exhibitions/edit/:id"
                   element={<ExhibitionEdit />}
                 />
+                <Route
+                  path="/dashboard/exhibitions/:id/live"
+                  element={<ArtistLivePage />}
+                />
               </Route>
             </Route>
 
+            <Route path="/exhibitions/:id/watch" element={<ViewerLivePage />} />
             {/* 6. BUYER ROUTES */}
             <Route element={<ProtectedRoute allowedRoles={["BUYER"]} />}>
               <Route element={<Layout />}>

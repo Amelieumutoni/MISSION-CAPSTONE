@@ -96,13 +96,6 @@ export const NAVIGATION_CONFIG = [
         path: "/dashboard/exhibitions/all",
         roles: ["ADMIN"],
       },
-      {
-        id: "manage-visibility",
-        label: "Publish Control",
-        icon: Eye,
-        path: "/dashboard/exhibitions/publish",
-        roles: ["ADMIN"],
-      },
     ],
   },
   {
@@ -142,7 +135,7 @@ export const NAVIGATION_CONFIG = [
         id: "archive",
         label: "Archived Content",
         icon: Archive,
-        path: "/dashboard/admin/archive",
+        path: "/dashboard/archives",
         roles: ["ADMIN"],
       },
     ],

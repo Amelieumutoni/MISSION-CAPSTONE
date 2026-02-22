@@ -18,14 +18,15 @@
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
+    "livekit-server-sdk": "^2.15.0",
     "multer": "^2.0.2",
     "pg": "^8.18.0",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
-    "sequelize-cli": "^6.6.5",
+    "sequelize-cli": "^6.6.2",
     "socket.io": "^4.8.3",
     "stripe": "^20.3.1",
-    "swagger-jsdoc": "^6.2.8",
+    "swagger-jsdoc": "^1.2.1",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {

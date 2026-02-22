@@ -22,6 +22,10 @@ const LiveStream = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
+    recording_path: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     total_views: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

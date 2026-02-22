@@ -63,13 +63,10 @@ export const ExhibitionService = {
   /**
    * Update the status (UPCOMING, LIVE, ARCHIVED)
    */
-  updateStatus: async (
-    exhibitionId: string,
-    status: "UPCOMING" | "LIVE" | "ARCHIVED",
-  ) => {
+  updateStatus: async (exhibitionId: string, is_published: boolean) => {
     const response = await api.patch(
       `/exhibitions/${exhibitionId}/visibility`,
-      { status },
+      { is_published },
     );
     return response.data;
   },
@@ -105,6 +102,28 @@ export const ExhibitionService = {
     return response.data;
   },
 
+  endLiveStream: async (exhibitionId: string) => {
+    const response = await api.post(`/exhibitions/${exhibitionId}/end-stream`);
+    return response.data;
+  },
+  /**
+   * Upload recording file after stream ends
+   */
+
+  uploadRecording: async (exhibitionId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("recording", file);
+    formData.append("exhibitionId", exhibitionId);
+
+    const response = await api.post(
+      `/exhibitions/recordings/upload`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+    return response.data;
+  },
   /**
    * Get all public exhibitions (only is_published: true)
    */
@@ -130,6 +149,14 @@ export const ExhibitionService = {
     const response = await api.get(
       `/exhibitions/my-exhibitions/${exhibitionId}`,
     );
+    return response.data;
+  },
+
+  getAdminExhibitions: async (): Promise<{
+    success: boolean;
+    data: Exhibition;
+  }> => {
+    const response = await api.get(`/exhibitions/all`);
     return response.data;
   },
 };

@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Upload, Loader2, Calendar } from "lucide-react";
+import {
+  ArrowLeft,
+  Upload,
+  Loader2,
+  Calendar,
+  RefreshCw,
+  Copy,
+  Check,
+  Link as LinkIcon,
+} from "lucide-react";
 import { ExhibitionService } from "@/api/services/exhibitionService";
 import { toast, Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,12 +18,18 @@ import { Textarea } from "@/components/ui/textarea";
 
 type ExhibitionType = "CLASSIFICATION" | "LIVE";
 
+const generateUniqueStreamLink = (exhibitionId: string) => {
+  const baseUrl = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+  return `${baseUrl}/exhibitions/${exhibitionId}/watch`;
+};
+
 export default function ExhibitionEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
 
@@ -62,6 +77,16 @@ export default function ExhibitionEdit() {
     fetchEx();
   }, [id, navigate]);
 
+  // Auto-generate link when switching to LIVE and no link exists
+  useEffect(() => {
+    if (form.type === "LIVE" && !form.stream_link) {
+      setForm((prev) => ({
+        ...prev,
+        stream_link: generateUniqueStreamLink(id!),
+      }));
+    }
+  }, [form.type]);
+
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -74,6 +99,19 @@ export default function ExhibitionEdit() {
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRegenerate = () => {
+    setForm((prev) => ({ ...prev, stream_link: generateUniqueStreamLink() }));
+    toast.success("New stream link generated");
+  };
+
+  const handleCopyLink = async () => {
+    if (!form.stream_link) return;
+    await navigator.clipboard.writeText(form.stream_link);
+    setCopied(true);
+    toast.success("Link copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,7 +163,6 @@ export default function ExhibitionEdit() {
       </div>
 
       <div className="max-w-5xl mx-auto px-8 py-12">
-        {/* Page Title */}
         <div className="mb-10 pb-6 border-b border-slate-100 dark:border-slate-800">
           <h1 className="text-4xl font-serif text-slate-900 dark:text-slate-50">
             Edit Exhibition
@@ -185,7 +222,6 @@ export default function ExhibitionEdit() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Left Column */}
             <div className="space-y-8">
-              {/* Title */}
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
                   Title
@@ -200,7 +236,6 @@ export default function ExhibitionEdit() {
                 />
               </div>
 
-              {/* Description */}
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
                   Description
@@ -214,22 +249,6 @@ export default function ExhibitionEdit() {
                   className="rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 resize-none"
                 />
               </div>
-
-              {/* Stream Link — only for LIVE */}
-              {form.type === "LIVE" && (
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
-                    Stream Link
-                  </label>
-                  <Input
-                    name="stream_link"
-                    value={form.stream_link}
-                    onChange={handleChange}
-                    placeholder="https://..."
-                    className="rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 font-mono text-sm"
-                  />
-                </div>
-              )}
             </div>
 
             {/* Right Column */}
@@ -257,60 +276,16 @@ export default function ExhibitionEdit() {
                 </div>
               </div>
 
-              {/* Dates — only for LIVE */}
-              {form.type === "LIVE" && (
-                <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
-                    Duration
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-[9px] uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                        Start
-                      </p>
-                      <div className="relative">
-                        <Calendar
-                          size={13}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-                        <Input
-                          type="date"
-                          name="start_date"
-                          value={form.start_date}
-                          onChange={handleChange}
-                          className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[9px] uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                        End
-                      </p>
-                      <div className="relative">
-                        <Calendar
-                          size={13}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-                        <Input
-                          type="date"
-                          name="end_date"
-                          value={form.end_date}
-                          onChange={handleChange}
-                          className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Visibility */}
               <div className="space-y-3">
                 <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
                   Visibility
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {[{ label: "Draft", value: false }].map((opt) => (
+                  {[
+                    { label: "Published", value: true },
+                    { label: "Draft", value: false },
+                  ].map((opt) => (
                     <button
                       key={String(opt.value)}
                       type="button"
@@ -339,7 +314,102 @@ export default function ExhibitionEdit() {
             </div>
           </div>
 
-          {/* Footer Actions */}
+          {/* LIVE Config Panel — mirrors NewExhibition exactly */}
+          {form.type === "LIVE" && (
+            <div className="p-8 border border-indigo-500/20 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.03] animate-in fade-in slide-in-from-top-4 duration-500 space-y-8">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-500">
+                  Live Event Configuration
+                </h4>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">
+                    Start Date
+                  </label>
+                  <div className="relative">
+                    <Calendar
+                      size={13}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <Input
+                      type="date"
+                      name="start_date"
+                      value={form.start_date}
+                      onChange={handleChange}
+                      required
+                      className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">
+                    End Date
+                  </label>
+                  <div className="relative">
+                    <Calendar
+                      size={13}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <Input
+                      type="date"
+                      name="end_date"
+                      value={form.end_date}
+                      onChange={handleChange}
+                      required
+                      className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Stream Link */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">
+                    Public Stream Link
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRegenerate}
+                    className="text-[9px] font-bold text-indigo-500 flex items-center gap-1 hover:underline uppercase tracking-widest"
+                  >
+                    <RefreshCw size={10} /> Regenerate
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 bg-white dark:bg-black/20 border border-slate-200 dark:border-slate-700 p-3">
+                  <LinkIcon
+                    size={14}
+                    className="text-slate-400 flex-shrink-0"
+                  />
+                  <code className="text-xs font-mono flex-1 text-slate-700 dark:text-slate-300 truncate">
+                    {form.stream_link}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors flex-shrink-0"
+                    title="Copy link"
+                  >
+                    {copied ? (
+                      <Check size={14} className="text-emerald-500" />
+                    ) : (
+                      <Copy size={14} />
+                    )}
+                  </button>
+                </div>
+                <p className="text-[9px] text-slate-400 dark:text-slate-500 italic">
+                  Share this link with your audience before going live.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
           <div className="flex justify-between items-center pt-8 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"

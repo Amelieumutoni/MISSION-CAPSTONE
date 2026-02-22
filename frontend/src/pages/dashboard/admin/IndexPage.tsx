@@ -56,10 +56,15 @@ export default function AdminDashboardOverview() {
         const allOrders = ordersRes?.data || [];
 
         // 1. Calculate Metrics
-        const revenue = allOrders.reduce(
-          (acc, curr) => acc + Number(curr.total_amount || 0),
+
+        const revens = allOrders.filter((rev) => rev.status === "PAID");
+
+        const revenue = revens.reduce(
+          (acc, curr) => acc + Number(curr.total_price || 0),
           0,
         );
+
+        console.log(revens);
         const pending = allArtists.filter((a) => a.status === "PENDING");
 
         setMetrics({

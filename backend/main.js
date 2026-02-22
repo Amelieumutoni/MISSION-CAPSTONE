@@ -15,10 +15,15 @@ const WebhookRoute = require("./src/modules/commerce/routes/WebhookRoute");
 const GlobalErrorHandler = require("./src/utils/GlobalErrorHandler");
 
 // Import your socket logic
-const setupExhibitionSockets = require("./src/modules/livestream/sockets/exhibitionSocket");
+const setupExhibitionSockets = require("./src/modules/exhibition/sockets/exhibitionSocket");
 
 // used middlewares
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use("/api/webhooks", WebhookRoute);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -62,8 +67,9 @@ async function bootstrap() {
     // 2. Initialize Socket.io
     const io = new Server(server, {
       cors: {
-        origin: "*",
+        origin: process.env.FRONTEND_URL || "http://localhost:5173",
         methods: ["GET", "POST"],
+        credentials: true,
       },
     });
 

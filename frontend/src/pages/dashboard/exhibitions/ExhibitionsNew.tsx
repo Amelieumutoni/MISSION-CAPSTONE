@@ -16,7 +16,7 @@ import { toast, Toaster } from "sonner";
 // Utility for public stream link generation
 const generateUniqueStreamLink = () => {
   const code = Math.random().toString(36).substring(2, 12);
-  return `https://stream.yourgallery.com/live/${code}`;
+  return `http://localhost:5173/dashboard/exhibitions/${code}/live`;
 };
 
 export default function NewExhibition() {
