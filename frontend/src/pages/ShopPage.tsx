@@ -42,8 +42,7 @@ export default function ShopPage() {
     clearCart,
   } = useCart();
 
-  const baseUrl =
-    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   const totalItems = useMemo(
     () => cart.reduce((sum, item: any) => sum + (item.quantity || 1), 0),

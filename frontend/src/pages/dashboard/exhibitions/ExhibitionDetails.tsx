@@ -26,8 +26,7 @@ export default function ExhibitionDetail() {
   const navigate = useNavigate();
   const [ex, setEx] = useState<Exhibition | null>(null);
   const [loading, setLoading] = useState(true);
-  const baseUrl =
-    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   useEffect(() => {
     const fetchEx = async () => {

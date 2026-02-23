@@ -257,7 +257,7 @@ export default function NewExhibition() {
                   <RefreshCw size={10} /> REGENERATE
                 </button>
               </div>
-              <div className="flex items-center gap-3 bg-white dark:bg-black/20 border border-border p-3">
+              <div className="flex w-10 items-center gap-3 bg-white dark:bg-black/20 border border-border p-3">
                 <LinkIcon size={14} className="text-muted-foreground" />
                 <code className="text-xs font-mono flex-1">
                   {formData.stream_link}

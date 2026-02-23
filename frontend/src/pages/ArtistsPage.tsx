@@ -9,8 +9,7 @@ export default function ArtistsPage() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All Disciplines");
 
-  const baseUrl =
-    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
   const placeholder =
     "https://images.unsplash.com/photo-1507646227500-4d389b0012be?q=80&w=1000&auto=format&fit=crop";
 

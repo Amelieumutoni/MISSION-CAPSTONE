@@ -25,8 +25,7 @@ export default function ArtworksPage() {
   const [activeMedium, setActiveMedium] = useState<string>("All");
   const [loading, setLoading] = useState(true);
 
-  const baseUrl =
-    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   useEffect(() => {
     const fetchArchive = async () => {

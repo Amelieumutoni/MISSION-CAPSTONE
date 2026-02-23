@@ -29,7 +29,7 @@ import {
 import { io, Socket } from "socket.io-client";
 import { livekitToken } from "@/api/services/liveStream";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "/socket.io";
 const LIVEKIT_URL =
   import.meta.env.VITE_LIVEKIT_URL ||
   "wss://livestreaming-yrj2soge.livekit.cloud";
@@ -100,8 +100,7 @@ export default function ViewerLivePage() {
 
   const socketRef = useRef<Socket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-  const baseUrl =
-    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   const handleJoinLive = useCallback(async () => {
     if (streamState !== "live" && streamState !== "interrupted") return;
@@ -218,7 +217,7 @@ export default function ViewerLivePage() {
 
     // Socket connection - only set up once
     if (!socketRef.current) {
-      const socket = io(SOCKET_URL, {
+      const socket = io(window.location.origin, {
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,

@@ -12,8 +12,7 @@ export function Sidebar({ className }: { className?: string }) {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const backendUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   const handleLogout = () => {
     logout(); // clears context + storage

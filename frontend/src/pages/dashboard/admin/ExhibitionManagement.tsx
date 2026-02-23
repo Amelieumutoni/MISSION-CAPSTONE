@@ -70,8 +70,7 @@ export default function AdminExhibitionsPage() {
   const [isPublished, setIsPublished] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  const baseUrl =
-    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   useEffect(() => {
     fetchExhibitions();

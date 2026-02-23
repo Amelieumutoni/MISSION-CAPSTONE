@@ -1,12 +1,24 @@
 import { Instagram } from "lucide-react";
 
+// Research-validated imagery for 2026 Exhibition Platforms
 const COMMUNITY_IMAGES = [
-  "https://images.unsplash.com/photo-1590736961141-72ec0b982941?auto=format&fit=crop&q=80&w=600",
-  "https://images.unsplash.com/photo-1616486788371-62d930495c44?auto=format&fit=crop&q=80&w=600",
+  // 1. Futuristic Venue: White fluid architecture
   "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&q=80&w=600",
-  "https://images.unsplash.com/photo-1565193998946-247f1ecb9ca9?auto=format&fit=crop&q=80&w=600",
-  "https://images.unsplash.com/photo-1536631980191-22588c368f87?auto=format&fit=crop&q=80&w=600",
-  "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&q=80&w=600",
+
+  // 2. Moody Gallery: Networking and atmospheric lighting
+  "https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&q=80&w=800",
+
+  // 3. Livestream Setup: Professional camera in a gallery context
+  "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=800",
+
+  // 4. Floral Pop: 2026 Aesthetic Lead (Vibrant Abstract)
+  "https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?auto=format&fit=crop&q=80&w=800",
+
+  // 5. Immersive Neon: Beyond the Frame digital installation
+  "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=800",
+
+  // 6. Biophilic Art: Tactile, nature-first organic textures
+  "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800",
 ];
 
 export default function CommunityHighlights() {
@@ -40,12 +52,6 @@ export default function CommunityHighlights() {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="mt-12 text-center">
-        <button className="text-[9px] font-black uppercase tracking-[0.3em] border-b border-slate-200 pb-1 hover:border-black transition-colors">
-          View Gallery
-        </button>
       </div>
     </section>
   );

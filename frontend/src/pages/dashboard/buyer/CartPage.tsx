@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { OrderService } from "@/api/services/orderService";
 import { toast, Toaster } from "sonner";
 
-const IMAGE_BASE = import.meta.env.VITE_IMAGE_URL || "http://localhost:5000";
+const IMAGE_BASE = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } =

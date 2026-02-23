@@ -13,8 +13,7 @@ export default function CollectionsPage() {
   const [collections, setCollections] = useState<Exhibition[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const baseUrl =
-    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   useEffect(() => {
     const fetchCollections = async () => {

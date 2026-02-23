@@ -24,7 +24,7 @@ import {
 import ArtworkService from "@/api/services/artworkService";
 import { ExhibitionService } from "@/api/services/exhibitionService";
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const BACKEND_URL = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
 export default function ArtistDashboardOverview() {
   const navigate = useNavigate();

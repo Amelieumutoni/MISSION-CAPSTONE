@@ -89,7 +89,7 @@ export const Navbar = () => {
                 <div className="w-8 h-8 bg-slate-100 rounded-full border border-slate-200 overflow-hidden flex-shrink-0">
                   {user.profile?.profile_picture ? (
                     <img
-                      src={`${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${user.profile.profile_picture}`}
+                      src={`${import.meta.env.BACKEND_IMAGE_URL || "/image"}${user.profile.profile_picture}`}
                       alt={user.name}
                       className="w-full h-full object-cover"
                     />

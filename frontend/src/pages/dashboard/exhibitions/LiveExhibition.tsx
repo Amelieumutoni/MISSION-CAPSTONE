@@ -32,7 +32,7 @@ import { io, Socket } from "socket.io-client";
 import { livekitToken } from "@/api/services/liveStream";
 import { Track } from "livekit-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "/socket.io";
 const LIVEKIT_URL =
   import.meta.env.VITE_LIVEKIT_URL ||
   "wss://livestreaming-yrj2soge.livekit.cloud";
@@ -167,7 +167,7 @@ export default function ArtistLivePage() {
       });
 
     // Socket connection
-    const socket = io(SOCKET_URL, {
+    const socket = io(window.location.origin, {
       withCredentials: true,
       reconnection: true,
       reconnectionAttempts: 5,

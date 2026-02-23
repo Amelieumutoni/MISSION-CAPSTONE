@@ -19,8 +19,7 @@ export default function AdminArtistsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
 
-  const IMAGE_BASE_URL =
-    import.meta.env.BACKEND_IMAGE_URL || "http://localhost:5000";
+  const IMAGE_BASE_URL = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   useEffect(() => {
     fetchArtists();

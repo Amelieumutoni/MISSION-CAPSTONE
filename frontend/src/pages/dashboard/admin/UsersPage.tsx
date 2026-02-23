@@ -131,7 +131,7 @@ export default function AdminUsersPage() {
                         <img
                           src={
                             user.profile?.profile_picture
-                              ? `http://localhost:5000${user.profile.profile_picture}`
+                              ? `/image${user.profile.profile_picture}`
                               : `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
                           }
                           alt={user.name}

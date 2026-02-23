@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 type ExhibitionType = "CLASSIFICATION" | "LIVE";
 
 const generateUniqueStreamLink = (exhibitionId: string) => {
-  const baseUrl = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+  const baseUrl = import.meta.env.FRONTEND_URL || window.location.origin;
   return `${baseUrl}/exhibitions/${exhibitionId}/watch`;
 };
 
@@ -43,8 +43,7 @@ export default function ExhibitionEdit() {
     is_published: false,
   });
 
-  const baseUrl =
-    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   useEffect(() => {
     const fetchEx = async () => {

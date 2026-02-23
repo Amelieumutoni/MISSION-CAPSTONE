@@ -25,7 +25,7 @@ export default function ArtistsSection() {
             location: user.profile?.location || "Rwanda",
             works: 0, // Admin endpoint might not include count; default to 0
             image:
-              "http://localhost:5000" + user.profile?.profile_picture ||
+              "/image" + user.profile?.profile_picture ||
               import.meta.env.BACKEND_IMAGE_URL + user.profile?.profile_picture, // Placeholder or real image
           }));
         console.log(data);

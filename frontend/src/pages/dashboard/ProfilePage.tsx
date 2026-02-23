@@ -83,7 +83,7 @@ function IdentitySection() {
     phone_contact: "",
   });
 
-  const BASE_URL = import.meta.env.VITE_IMAGE_URL || "http://localhost:5000";
+  const BASE_URL = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   useEffect(() => {
     if (user?.profile) {

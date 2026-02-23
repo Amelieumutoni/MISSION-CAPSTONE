@@ -82,7 +82,7 @@ export default function BuyerProfileSection() {
                 src={
                   preview ||
                   (user?.profile?.profile_picture
-                    ? `${import.meta.env.VITE_IMAGE_URL || "http://localhost:5000"}${user.profile.profile_picture}`
+                    ? `${import.meta.env.BACKEND_IMAGE_URL || "/image"}${user.profile.profile_picture}`
                     : "/default-avatar.png")
                 }
                 className="w-full h-full object-cover"

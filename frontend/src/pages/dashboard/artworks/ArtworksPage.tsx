@@ -42,8 +42,7 @@ function SkeletonCard() {
 export default function ArtworksManagementPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const baseUrl =
-    import.meta.env.VITE_BACKEND_IMAGE_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   // States
   const [artworks, setArtworks] = useState<any[]>([]);
