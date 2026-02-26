@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router"; // To redirect to login
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router";
 import {
   ShoppingCart,
   X,
@@ -8,11 +8,13 @@ import {
   Plus,
   Minus,
   Lock,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import ArtworkService from "@/api/services/artworkService";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/hooks/useAuth"; // Assuming you have an AuthContext
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
 interface Artwork {
@@ -30,9 +32,11 @@ export default function ShopPage() {
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
+  const categoryRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { user } = useAuth(); // Get login status
+  const { user } = useAuth();
   const {
     cart,
     addToCart,
@@ -45,16 +49,30 @@ export default function ShopPage() {
   const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
   const totalItems = useMemo(
-    () => cart.reduce((sum, item: any) => sum + (item.quantity || 1), 0),
+    () =>
+      cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0),
     [cart],
   );
+
+  // Close category dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        categoryRef.current &&
+        !categoryRef.current.contains(e.target as Node)
+      ) {
+        setCategoryOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   useEffect(() => {
     const loadMarketplace = async () => {
       try {
         const response = await ArtworkService.getArtworks();
         if (response?.data) {
-          // STRICT FILTER: Only show AVAILABLE works to be sold
           const availableOnly = response.data.filter(
             (w: Artwork) => w.status.toUpperCase() === "AVAILABLE",
           );
@@ -73,40 +91,50 @@ export default function ShopPage() {
     if (!user) {
       toast.error("Please login to complete your purchase", {
         description: "You need an account to handle shipping and security.",
-        action: {
-          label: "Login",
-          onClick: () => navigate("/login"),
-        },
+        action: { label: "Login", onClick: () => navigate("/login") },
       });
       setCartOpen(false);
       navigate("/login");
       return;
     }
-    // Proceed to checkout logic here
     navigate("/cart");
   };
 
+  // Unique categories derived from loaded artworks
   const categories = useMemo(() => {
-    const techs = artworks.map((a) => a.technique);
+    const techs = artworks
+      .map((a) => a.technique)
+      .filter(Boolean)
+      .sort();
     return ["ALL", ...Array.from(new Set(techs))];
   }, [artworks]);
 
-  const filteredArtworks = artworks.filter((work) => {
-    const matchesCategory =
-      activeFilter === "ALL" || work.technique === activeFilter;
-    const matchesSearch =
-      work.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      work.technique.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // Single memo for filtered results — search and category applied together
+  const filteredArtworks = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return artworks.filter((work) => {
+      const matchesCategory =
+        activeFilter === "ALL" || work.technique === activeFilter;
+      const matchesSearch =
+        !q ||
+        work.title.toLowerCase().includes(q) ||
+        work.technique.toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [artworks, activeFilter, searchQuery]);
+
+  const handleClearSearch = () => setSearchQuery("");
+  const handleClearFilter = () => setActiveFilter("ALL");
 
   return (
     <>
+      {/* ── Sticky nav ── */}
       <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4 py-4">
-            <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 flex-1 max-w-md group focus-within:ring-1 ring-slate-400 transition-all">
-              <Search size={16} className="text-slate-400" />
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 py-4">
+            {/* Search input */}
+            <div className="relative flex items-center gap-3 bg-slate-50 px-4 py-2.5 flex-1 max-w-md focus-within:ring-1 ring-slate-400 transition-all">
+              <Search size={16} className="text-slate-400 flex-shrink-0" />
               <input
                 type="text"
                 placeholder="Search collection..."
@@ -114,34 +142,100 @@ export default function ShopPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent border-none text-sm focus:ring-0 w-full outline-none"
               />
+              {searchQuery && (
+                <button
+                  onClick={handleClearSearch}
+                  className="text-slate-400 hover:text-slate-700 transition-colors flex-shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveFilter(cat)}
-                  className={`px-4 py-2 text-[10px] uppercase font-bold tracking-widest transition-all ${
-                    activeFilter === cat
-                      ? "bg-slate-900 text-white"
-                      : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            {/* Category filter — dropdown instead of overflowing pill row */}
+            <div ref={categoryRef} className="relative flex-shrink-0">
+              <button
+                onClick={() => setCategoryOpen((p) => !p)}
+                className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-50 transition-all min-w-[160px] justify-between"
+              >
+                <span className="truncate">
+                  {activeFilter === "ALL" ? "All Techniques" : activeFilter}
+                </span>
+                <ChevronDown
+                  size={13}
+                  className={`flex-shrink-0 transition-transform ${categoryOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {categoryOpen && (
+                <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-slate-200 shadow-lg z-50 max-h-72 overflow-y-auto">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        setActiveFilter(cat);
+                        setCategoryOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-[10px] uppercase tracking-widest font-bold text-left transition-colors ${
+                        activeFilter === cat
+                          ? "bg-slate-900 text-white"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="truncate">
+                        {cat === "ALL" ? "All Techniques" : cat}
+                      </span>
+                      {activeFilter === cat && (
+                        <Check size={11} className="flex-shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Active filter chips — only when something is active */}
+            {(searchQuery || activeFilter !== "ALL") && (
+              <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap">
+                {searchQuery && (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-[9px] uppercase tracking-widest font-bold text-slate-600 max-w-[160px]">
+                    <Search size={9} className="flex-shrink-0" />
+                    <span className="truncate">{searchQuery}</span>
+                    <button
+                      onClick={handleClearSearch}
+                      className="flex-shrink-0 hover:text-slate-900"
+                    >
+                      <X size={9} />
+                    </button>
+                  </span>
+                )}
+                {activeFilter !== "ALL" && (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white text-[9px] uppercase tracking-widest font-bold max-w-[160px]">
+                    <span className="truncate">{activeFilter}</span>
+                    <button
+                      onClick={handleClearFilter}
+                      className="flex-shrink-0 hover:text-slate-300"
+                    >
+                      <X size={9} />
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </nav>
 
+      {/* ── Main content ── */}
       <main className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
         <header className="mb-12">
           <h1 className="text-6xl font-serif tracking-tighter text-slate-900">
             Market.
           </h1>
           <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] mt-4 font-bold">
-            {filteredArtworks.length} available for acquisition
+            {loading
+              ? "Loading collection..."
+              : `${filteredArtworks.length} available for acquisition`}
           </p>
         </header>
 
@@ -166,15 +260,26 @@ export default function ShopPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-40 border border-dashed border-slate-200">
+          <div className="text-center py-40 border border-dashed border-slate-200 space-y-4">
             <p className="text-slate-400 uppercase tracking-widest text-[10px] font-bold">
               No pieces matching your selection
             </p>
+            {(searchQuery || activeFilter !== "ALL") && (
+              <button
+                onClick={() => {
+                  handleClearSearch();
+                  handleClearFilter();
+                }}
+                className="text-[10px] uppercase tracking-widest font-bold text-slate-900 underline underline-offset-4"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         )}
       </main>
 
-      {/* CART SIDEBAR */}
+      {/* ── Cart sidebar ── */}
       {cartOpen && (
         <>
           <div
@@ -182,23 +287,31 @@ export default function ShopPage() {
             onClick={() => setCartOpen(false)}
           />
           <div className="fixed right-0 top-0 h-full w-full lg:w-[450px] bg-white z-50 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="border-b border-slate-100 flex flex-col py-6 gap-y-10">
+            <div className="border-b border-slate-100 flex flex-col py-6 gap-y-4">
               <div className="px-8 flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-serif">Your Cart</h2>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                    {totalItems} Pieces
+                    {totalItems} {totalItems === 1 ? "Piece" : "Pieces"}
                   </p>
                 </div>
-                <button onClick={() => setCartOpen(false)}>
+                <button
+                  onClick={() => setCartOpen(false)}
+                  className="p-2 hover:bg-slate-100 transition-colors"
+                >
                   <X size={20} />
                 </button>
               </div>
-              <div className="px-8 flex hover:underline text-red-400  justify-between items-center">
-                <button className="cursor-pointer" onClick={() => clearCart()}>
-                  Clear Cart
-                </button>
-              </div>
+              {cart.length > 0 && (
+                <div className="px-8">
+                  <button
+                    onClick={clearCart}
+                    className="text-[9px] uppercase tracking-widest font-bold text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    Clear Cart
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-6">
@@ -247,7 +360,7 @@ export default function ShopPage() {
         </>
       )}
 
-      {/* FLOATING BUTTON */}
+      {/* ── Floating cart button ── */}
       {totalItems > 0 && (
         <button
           onClick={() => setCartOpen(true)}
@@ -261,8 +374,6 @@ export default function ShopPage() {
   );
 }
 
-// ... Keep ShopCard, CartItem, and SkeletonCard from previous version but ensure ShopCard handles "AVAILABLE" UI cleanly.
-
 function ShopCard({
   work,
   baseUrl,
@@ -273,7 +384,7 @@ function ShopCard({
   onBuy: () => void;
 }) {
   const isSold = work.status === "SOLD";
-  const imageSrc = work.main_image.startsWith("http")
+  const imageSrc = work.main_image?.startsWith("http")
     ? work.main_image
     : `${baseUrl}${work.main_image}`;
 
@@ -285,7 +396,6 @@ function ShopCard({
           alt={work.title}
           className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 ${isSold ? "opacity-40 grayscale" : ""}`}
         />
-
         {isSold ? (
           <div className="absolute top-4 left-4 bg-slate-900 text-white px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest">
             Sold
@@ -304,17 +414,16 @@ function ShopCard({
           </div>
         )}
       </div>
-
       <div className="flex justify-between items-start gap-4 px-1">
-        <div className="space-y-1">
-          <h3 className="font-serif text-lg leading-tight text-slate-900 group-hover:text-slate-600 transition-colors">
+        <div className="space-y-1 min-w-0">
+          <h3 className="font-serif text-lg leading-tight text-slate-900 group-hover:text-slate-600 transition-colors truncate">
             {work.title}
           </h3>
-          <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
+          <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold truncate">
             {work.technique}
           </p>
         </div>
-        <p className="font-mono text-sm font-bold text-slate-900">
+        <p className="font-mono text-sm font-bold text-slate-900 flex-shrink-0">
           ${parseFloat(work.price).toLocaleString()}
         </p>
       </div>
@@ -333,7 +442,7 @@ function CartItem({
   onRemove: () => void;
   onUpdateQuantity: (qty: number) => void;
 }) {
-  const imageSrc = item.main_image.startsWith("http")
+  const imageSrc = item.main_image?.startsWith("http")
     ? item.main_image
     : `${baseUrl}${item.main_image}`;
   const quantity = item.quantity || 1;
@@ -353,7 +462,7 @@ function CartItem({
             <h3 className="font-serif text-sm font-bold text-slate-900 truncate">
               {item.title}
             </h3>
-            <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">
+            <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold truncate">
               {item.technique}
             </p>
           </div>
@@ -395,8 +504,8 @@ function SkeletonCard() {
   return (
     <div className="space-y-4">
       <div className="aspect-[3/4] bg-slate-200 animate-pulse" />
-      <div className="h-4 bg-slate-200 w-2/3" />
-      <div className="h-4 bg-slate-100 w-1/4" />
+      <div className="h-4 bg-slate-200 w-2/3 animate-pulse" />
+      <div className="h-4 bg-slate-100 w-1/4 animate-pulse" />
     </div>
   );
 }

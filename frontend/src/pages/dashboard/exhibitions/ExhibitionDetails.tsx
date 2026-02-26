@@ -276,7 +276,6 @@ export default function ExhibitionDetail() {
                 </Button>
               )}
 
-              {/* Only show Curate Artworks button if not archived */}
               {!isArchived && (
                 <Button
                   variant="ghost"

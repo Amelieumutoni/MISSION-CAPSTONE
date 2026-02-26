@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Copy,
   Check,
+  AlertCircle,
   Link as LinkIcon,
 } from "lucide-react";
 import { ExhibitionService } from "@/api/services/exhibitionService";
@@ -32,6 +33,7 @@ export default function ExhibitionEdit() {
   const [copied, setCopied] = useState(false);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [isArchived, setIsArchived] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -55,23 +57,23 @@ export default function ExhibitionEdit() {
         const formatDateForInput = (dateString) => {
           if (!dateString) return "";
           const d = new Date(dateString);
-          const offset = d.getTimezoneOffset() * 60000; // offset in milliseconds
+          const offset = d.getTimezoneOffset() * 60000;
           const localISOTime = new Date(d - offset).toISOString().slice(0, 16);
           return localISOTime;
         };
 
-        // Use this when setting your form state
         const initialState = {
           title: ex.title || "",
           description: ex.description || "",
           type: ex.type || "CLASSIFICATION",
           stream_link: ex.stream_link || "",
-          start_date: formatDateForInput(ex.start_date), // Formatted!
-          end_date: formatDateForInput(ex.end_date), // Formatted!
+          start_date: formatDateForInput(ex.start_date),
+          end_date: formatDateForInput(ex.end_date),
           is_published: ex.is_published || false,
         };
 
         setForm(initialState);
+        setIsArchived(ex.status === "ARCHIVED");
         if (ex.banner_image) {
           setBannerPreview(
             ex.banner_image.startsWith("http")
@@ -89,7 +91,6 @@ export default function ExhibitionEdit() {
     fetchEx();
   }, [id, navigate]);
 
-  // Auto-generate link when switching to LIVE and no link exists
   useEffect(() => {
     if (form.type === "LIVE" && !form.stream_link) {
       setForm((prev) => ({
@@ -100,6 +101,7 @@ export default function ExhibitionEdit() {
   }, [form.type]);
 
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isArchived) return;
     const file = e.target.files?.[0];
     if (!file) return;
     setBannerFile(file);
@@ -109,12 +111,17 @@ export default function ExhibitionEdit() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
+    if (isArchived) return;
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleRegenerate = () => {
-    setForm((prev) => ({ ...prev, stream_link: generateUniqueStreamLink() }));
+    if (isArchived) return;
+    setForm((prev) => ({
+      ...prev,
+      stream_link: generateUniqueStreamLink(id!),
+    }));
     toast.success("New stream link generated");
   };
 
@@ -128,6 +135,8 @@ export default function ExhibitionEdit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isArchived) return;
+
     setSaving(true);
     try {
       const formData = new FormData();
@@ -184,271 +193,337 @@ export default function ExhibitionEdit() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-12">
-          {/* Banner Upload */}
-          <div className="space-y-3">
-            <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
-              Banner Image
-            </label>
-            <div
-              className="relative w-full aspect-video bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden cursor-pointer group"
-              onClick={() => document.getElementById("banner-upload")?.click()}
-            >
-              {bannerPreview ? (
-                <>
-                  <img
-                    src={bannerPreview}
-                    alt="Banner preview"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="text-white text-center">
+        {/* Archived banner — outside the form so it's always visible and unaffected */}
+        {isArchived && (
+          <div className="flex items-start gap-3 p-4 mb-8 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+            <AlertCircle
+              size={18}
+              className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+            />
+            <div>
+              <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                Exhibition Archived
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                This exhibition has ended and can no longer be edited. All
+                fields are read-only.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/*
+          Outer wrapper: when archived, pointer-events-none blocks ALL clicks
+          (buttons, inputs, file pickers, everything). select-none prevents
+          accidental text selection giving the illusion of interactivity.
+          The opacity dims the form so it visually reads as disabled.
+        */}
+        <div
+          className={
+            isArchived
+              ? "pointer-events-none select-none opacity-50"
+              : undefined
+          }
+        >
+          <form onSubmit={handleSubmit} className="space-y-12">
+            {/* Banner Upload */}
+            <div className="space-y-3">
+              <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
+                Banner Image
+              </label>
+              <div
+                className="relative w-full aspect-video bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden group"
+                // no onClick when archived — pointer-events-none on parent handles it
+                onClick={() =>
+                  !isArchived &&
+                  document.getElementById("banner-upload")?.click()
+                }
+                style={{ cursor: isArchived ? "default" : "pointer" }}
+              >
+                {bannerPreview ? (
+                  <>
+                    <img
+                      src={bannerPreview}
+                      alt="Banner preview"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    {!isArchived && (
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="text-white text-center">
+                          <Upload size={24} className="mx-auto mb-2" />
+                          <p className="text-[10px] uppercase tracking-widest">
+                            Change Banner
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-slate-400 dark:text-slate-600">
+                    <div className="text-center">
                       <Upload size={24} className="mx-auto mb-2" />
                       <p className="text-[10px] uppercase tracking-widest">
-                        Change Banner
+                        Upload Banner
                       </p>
                     </div>
                   </div>
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-400 dark:text-slate-600">
-                  <div className="text-center">
-                    <Upload size={24} className="mx-auto mb-2" />
-                    <p className="text-[10px] uppercase tracking-widest">
-                      Upload Banner
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-            <input
-              id="banner-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleBannerChange}
-            />
-          </div>
-
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Left Column */}
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
-                  Title
-                </label>
-                <Input
-                  name="title"
-                  value={form.title}
-                  onChange={handleChange}
-                  required
-                  placeholder="Exhibition title..."
-                  className="rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11"
-                />
+                )}
               </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
-                  Description
-                </label>
-                <Textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  placeholder="Describe this exhibition..."
-                  rows={5}
-                  className="rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 resize-none"
-                />
-              </div>
+              <input
+                id="banner-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={isArchived}
+                onChange={handleBannerChange}
+              />
             </div>
 
-            {/* Right Column */}
-            <div className="space-y-8">
-              {/* Exhibition Type */}
-              <div className="space-y-3">
-                <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
-                  Exhibition Type
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["CLASSIFICATION", "LIVE"] as ExhibitionType[]).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, type: t }))}
-                      className={`py-3 text-[10px] uppercase tracking-widest font-bold border transition-all ${
-                        form.type === t
-                          ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100"
-                          : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Visibility */}
-              <div className="space-y-3">
-                <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
-                  Visibility
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: "Published", value: true },
-                    { label: "Draft", value: false },
-                  ].map((opt) => (
-                    <button
-                      key={String(opt.value)}
-                      type="button"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          is_published: opt.value,
-                        }))
-                      }
-                      className={`py-3 text-[10px] uppercase tracking-widest font-bold border transition-all ${
-                        form.is_published === opt.value
-                          ? opt.value
-                            ? "bg-emerald-600 text-white border-emerald-600"
-                            : "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100"
-                          : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[9px] text-slate-400 dark:text-slate-500 italic">
-                  Published exhibitions are visible to the public.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* LIVE Config Panel — mirrors NewExhibition exactly */}
-          {form.type === "LIVE" && (
-            <div className="p-8 border border-indigo-500/20 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.03] animate-in fade-in slide-in-from-top-4 duration-500 space-y-8">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-500">
-                  Live Event Configuration
-                </h4>
-              </div>
-
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">
-                    Start Date
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              {/* Left Column */}
+              <div className="space-y-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
+                    Title
                   </label>
-                  <div className="relative">
-                    <Calendar
-                      size={13}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <Input
-                      type="datetime-local"
-                      name="start_date"
-                      value={form.start_date}
-                      min={minDateTime}
-                      onChange={handleChange}
-                      required
-                      className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">
-                    End Date
-                  </label>
-                  <div className="relative">
-                    <Calendar
-                      size={13}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <Input
-                      type="datetime-local"
-                      name="end_date"
-                      value={form.end_date}
-                      onChange={handleChange}
-                      min={
-                        form.start_date || new Date().toISOString().slice(0, 16)
-                      }
-                      required
-                      className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Stream Link */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">
-                    Public Stream Link
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleRegenerate}
-                    className="text-[9px] font-bold text-indigo-500 flex items-center gap-1 hover:underline uppercase tracking-widest"
-                  >
-                    <RefreshCw size={10} /> Regenerate
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-3 bg-white dark:bg-black/20 border border-slate-200 dark:border-slate-700 p-3">
-                  <LinkIcon
-                    size={14}
-                    className="text-slate-400 flex-shrink-0"
+                  <Input
+                    name="title"
+                    value={form.title}
+                    onChange={handleChange}
+                    disabled={isArchived}
+                    readOnly={isArchived}
+                    placeholder="Exhibition title..."
+                    className="rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11"
                   />
-                  <code className="text-xs font-mono flex-1 text-slate-700 dark:text-slate-300 truncate">
-                    {form.stream_link}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={handleCopyLink}
-                    className="text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors flex-shrink-0"
-                    title="Copy link"
-                  >
-                    {copied ? (
-                      <Check size={14} className="text-emerald-500" />
-                    ) : (
-                      <Copy size={14} />
-                    )}
-                  </button>
                 </div>
-                <p className="text-[9px] text-slate-400 dark:text-slate-500 italic">
-                  Share this link with your audience before going live.
-                </p>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
+                    Description
+                  </label>
+                  <Textarea
+                    name="description"
+                    value={form.description}
+                    onChange={handleChange}
+                    disabled={isArchived}
+                    readOnly={isArchived}
+                    placeholder="Describe this exhibition..."
+                    rows={5}
+                    className="rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-8">
+                {/* Exhibition Type */}
+                <div className="space-y-3">
+                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
+                    Exhibition Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["CLASSIFICATION", "LIVE"] as ExhibitionType[]).map(
+                      (t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          disabled={isArchived}
+                          onClick={() =>
+                            !isArchived &&
+                            setForm((prev) => ({ ...prev, type: t }))
+                          }
+                          className={`py-3 text-[10px] uppercase tracking-widest font-bold border transition-all ${
+                            form.type === t
+                              ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100"
+                              : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </div>
+
+                {/* Visibility */}
+                <div className="space-y-3">
+                  <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-500 dark:text-slate-400">
+                    Visibility
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: "Published", value: true },
+                      { label: "Draft", value: false },
+                    ].map((opt) => (
+                      <button
+                        key={String(opt.value)}
+                        type="button"
+                        disabled={isArchived}
+                        onClick={() =>
+                          !isArchived &&
+                          setForm((prev) => ({
+                            ...prev,
+                            is_published: opt.value,
+                          }))
+                        }
+                        className={`py-3 text-[10px] uppercase tracking-widest font-bold border transition-all ${
+                          form.is_published === opt.value
+                            ? opt.value
+                              ? "bg-emerald-600 text-white border-emerald-600"
+                              : "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100"
+                            : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 italic">
+                    Published exhibitions are visible to the public.
+                  </p>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Footer */}
-          <div className="flex justify-between items-center pt-8 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => navigate(`/dashboard/exhibitions/${id}`)}
-              className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <Button
-              type="submit"
-              disabled={saving}
-              className="rounded-none px-12 py-6 uppercase text-[10px] tracking-widest font-bold bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-700 dark:hover:bg-slate-200 disabled:opacity-50"
-            >
-              {saving ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 size={14} className="animate-spin" /> Saving...
-                </span>
-              ) : (
-                "Save Changes"
-              )}
-            </Button>
-          </div>
-        </form>
+            {/* LIVE Config Panel */}
+            {form.type === "LIVE" && (
+              <div className="p-8 border border-indigo-500/20 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.03] space-y-8">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-500">
+                    Live Event Configuration
+                  </h4>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">
+                      Start Date
+                    </label>
+                    <div className="relative">
+                      <Calendar
+                        size={13}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <Input
+                        type="datetime-local"
+                        name="start_date"
+                        value={form.start_date}
+                        min={minDateTime}
+                        onChange={handleChange}
+                        disabled={isArchived}
+                        readOnly={isArchived}
+                        className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">
+                      End Date
+                    </label>
+                    <div className="relative">
+                      <Calendar
+                        size={13}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <Input
+                        type="datetime-local"
+                        name="end_date"
+                        value={form.end_date}
+                        onChange={handleChange}
+                        disabled={isArchived}
+                        readOnly={isArchived}
+                        min={
+                          form.start_date ||
+                          new Date().toISOString().slice(0, 16)
+                        }
+                        className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stream Link — copy still works when archived, regenerate doesn't */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">
+                      Public Stream Link
+                    </label>
+                    {!isArchived && (
+                      <button
+                        type="button"
+                        onClick={handleRegenerate}
+                        className="text-[9px] font-bold text-indigo-500 flex items-center gap-1 hover:underline uppercase tracking-widest"
+                      >
+                        <RefreshCw size={10} /> Regenerate
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-white dark:bg-black/20 border border-slate-200 dark:border-slate-700 p-3">
+                    <LinkIcon
+                      size={14}
+                      className="text-slate-400 flex-shrink-0"
+                    />
+                    <code className="text-xs font-mono flex-1 text-slate-700 dark:text-slate-300 truncate">
+                      {form.stream_link}
+                    </code>
+                    {/*
+                      Copy button is intentionally OUTSIDE pointer-events-none
+                      because copying the link is a read-only action that's
+                      still useful even on an archived exhibition.
+                      We re-enable pointer events just for this button.
+                    */}
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      style={{ pointerEvents: "auto" }}
+                      className="text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors flex-shrink-0"
+                      title="Copy link"
+                    >
+                      {copied ? (
+                        <Check size={14} className="text-emerald-500" />
+                      ) : (
+                        <Copy size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 italic">
+                    Share this link with your audience before going live.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="flex justify-between items-center pt-8 border-t border-slate-100 dark:border-slate-800">
+              {/* Cancel re-enables pointer events — navigation is always allowed */}
+              <button
+                type="button"
+                style={{ pointerEvents: "auto" }}
+                onClick={() => navigate(`/dashboard/exhibitions/${id}`)}
+                className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <Button
+                type="submit"
+                disabled={saving || isArchived}
+                className="rounded-none px-12 py-6 uppercase text-[10px] tracking-widest font-bold bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-700 dark:hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 size={14} className="animate-spin" /> Saving...
+                  </span>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
