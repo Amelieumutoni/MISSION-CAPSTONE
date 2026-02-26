@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { ExhibitionService } from "@/api/services/exhibitionService";
 import { Button } from "@/components/ui/button";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 
 // Utility for public stream link generation
 const generateUniqueStreamLink = () => {
@@ -76,8 +76,6 @@ export default function NewExhibition() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
-      <Toaster position="top-right" richColors />
-
       {/* Navigation Back */}
       <button
         onClick={() => navigate(-1)}

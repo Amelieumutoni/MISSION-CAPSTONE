@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Toaster } from "sonner";
 
 export default function AdminArtistsPage() {
   const [artists, setArtists] = useState<UserProfile[]>([]);
@@ -57,11 +56,8 @@ export default function AdminArtistsPage() {
   const filtered = artists.filter((a) =>
     a.name.toLowerCase().includes(filter.toLowerCase()),
   );
-  console.log(filtered);
   return (
     <div className="min-h-screen p-8 max-w-7xl mx-auto space-y-6 bg-white dark:bg-transparent transition-colors duration-300">
-      <Toaster duration={3000} richColors theme="system" />
-
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-200 dark:border-slate-800 pb-6 gap-4">
         <div>

@@ -7,7 +7,6 @@ const app = express();
 const cors = require("cors");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-require("./src/modules/notifications/events/notificationEvents");
 require("./src/jobs/liveEventChecker");
 
 const sequelize = require("./src/utils/database/connection");
@@ -19,6 +18,9 @@ const GlobalErrorHandler = require("./src/utils/GlobalErrorHandler");
 
 // Import your socket logic
 const setupExhibitionSockets = require("./src/modules/exhibition/sockets/exhibitionSocket");
+const {
+  initNotificationModule,
+} = require("./src/modules/notifications/events/notificationEvents");
 
 // used middlewares
 app.use(
@@ -76,6 +78,7 @@ async function bootstrap() {
     });
 
     setupExhibitionSockets(io);
+    initNotificationModule(io);
 
     server.listen(port, () => {
       console.log(`Server & Sockets running on http://localhost:${port}`);

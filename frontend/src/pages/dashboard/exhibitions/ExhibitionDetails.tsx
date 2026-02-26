@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 
 export default function ExhibitionDetail() {
   const { id } = useParams();
@@ -81,8 +81,6 @@ export default function ExhibitionDetail() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-transparent pb-20 transition-colors duration-300">
-      <Toaster richColors theme="system" />
-
       {/* Hero Banner */}
       <div className="relative h-[50vh] w-full overflow-hidden bg-slate-900">
         <img

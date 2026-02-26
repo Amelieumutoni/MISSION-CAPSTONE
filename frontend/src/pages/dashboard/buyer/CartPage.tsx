@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OrderService } from "@/api/services/orderService";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 
 const IMAGE_BASE = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
@@ -122,7 +122,6 @@ export default function CartPage() {
   if (searchParams.get("session_id")) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4 animate-in zoom-in-95 duration-500">
-        <Toaster position="top-right" richColors />
         <CheckCircle2 size={56} className="text-emerald-500 animate-bounce" />
         <h1 className="text-2xl font-serif font-bold dark:text-white">
           Payment Verified
@@ -137,7 +136,6 @@ export default function CartPage() {
   if (cart.length === 0) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-700">
-        <Toaster position="top-right" richColors />
         <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-full flex items-center justify-center text-slate-300">
           <ShoppingBag size={40} strokeWidth={1} />
         </div>
@@ -161,8 +159,6 @@ export default function CartPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 lg:py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <Toaster position="top-right" richColors />
-
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
         <div>

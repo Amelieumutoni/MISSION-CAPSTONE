@@ -4,7 +4,7 @@ import {
   ExhibitionService,
   type Exhibition,
 } from "@/api/services/exhibitionService";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import {
   Search,
   Eye,
@@ -187,8 +187,6 @@ export default function AdminExhibitionsPage() {
 
   return (
     <div className="min-h-screen p-8">
-      <Toaster richColors />
-
       {/* HEADER */}
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-end border-b pb-4">

@@ -15,7 +15,7 @@ import {
   type Exhibition,
 } from "@/api/services/exhibitionService";
 import ArtworkService, { type Artwork } from "@/api/services/artworkService";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -141,8 +141,6 @@ export default function ExhibitionManagement() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-transparent transition-colors duration-300 max-w-7xl mx-auto px-4 pb-16">
-      <Toaster position="bottom-right" richColors theme="system" />
-
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 py-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>

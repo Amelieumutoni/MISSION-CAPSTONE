@@ -12,7 +12,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { ExhibitionService } from "@/api/services/exhibitionService";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -168,8 +168,6 @@ export default function ExhibitionEdit() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-transparent transition-colors duration-300 pb-20">
-      <Toaster richColors theme="system" />
-
       {/* Top Bar */}
       <div className="border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between">
         <button

@@ -12,7 +12,6 @@ import {
   Filter,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Toaster } from "sonner";
 import { format } from "date-fns";
 
 export default function AdminUsersPage() {
@@ -56,8 +55,6 @@ export default function AdminUsersPage() {
 
   return (
     <div className="min-h-screen p-8 max-w-7xl mx-auto space-y-6 bg-transparent transition-colors duration-300">
-      <Toaster richColors theme="dark" />
-
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <div>

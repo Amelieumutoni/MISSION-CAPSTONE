@@ -12,7 +12,7 @@ import {
   ExhibitionService,
   type Exhibition,
 } from "@/api/services/exhibitionService";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Radio,
@@ -627,8 +627,6 @@ export default function ArtistLivePage() {
       `}</style>
 
       <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-300">
-        <Toaster richColors theme="system" />
-
         {/* Top Bar */}
         <div className="border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between">
           <button

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import ArtworkService from "@/api/services/artworkService";
 import { useAuth } from "@/context/AuthContext";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { UniversalDrawer } from "@/components/dashboard/UpdateModel";
 
@@ -189,8 +189,6 @@ export default function ArtworksManagementPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 pb-16">
-      <Toaster position="top-right" richColors />
-
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 py-4">
         <div>
