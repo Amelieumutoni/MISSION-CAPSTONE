@@ -27,7 +27,7 @@ export default function Footer() {
             Explore
           </h6>
           <nav className="flex flex-col gap-3">
-            {["Artists", "Streams", "Archives", "Collections", "Auctions"].map(
+            {["Artists", "Shop", "Archives", "Collections", "Exhibitions"].map(
               (item) => (
                 <a
                   key={item}
