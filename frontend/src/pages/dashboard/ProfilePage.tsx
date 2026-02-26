@@ -85,6 +85,7 @@ function IdentitySection() {
 
   const BASE_URL = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
+  console.log(user?.profile);
   useEffect(() => {
     if (user?.profile) {
       setFormData({

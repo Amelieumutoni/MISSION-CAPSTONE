@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { OrderService } from "@/api/services/orderService";
+import NotificationService from "@/api/services/notificationSerivce";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Package,
   CreditCard,
@@ -10,34 +12,42 @@ import {
   Settings,
   ShoppingBag,
   LogOut,
+  Bell,
+  Trash2,
+  MailOpen,
+  AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BuyerProfileSection from "@/components/dashboard/buyer/UpdateProfile";
-import { toast } from "sonner"; // Added toast import
+import { toast } from "sonner";
 import AccountSettingsSection from "@/components/dashboard/buyer/AccountSettings";
 
 export default function BuyerDashboard() {
   const [orders, setOrders] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [activeSection, setActiveSection] = useState("orders");
   const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState("ALL");
   const { logout } = useAuth();
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const data = await OrderService.getUserOrders();
-        setOrders(data);
+        const [orderData, notifData] = await Promise.all([
+          OrderService.getUserOrders(),
+          NotificationService.getMyNotifications(),
+        ]);
+        setOrders(orderData);
+        setNotifications(notifData.data || notifData);
       } catch (err) {
-        // Error toast for data fetching
-        toast.error("Failed to load collections", {
-          description: "We couldn't retrieve your orders at this time.",
-        });
-        console.error("Failed to fetch orders", err);
+        toast.error("Failed to load dashboard data");
+        console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchOrders();
+    fetchDashboardData();
   }, []);
 
   const handleLogout = () => {
@@ -47,11 +57,48 @@ export default function BuyerDashboard() {
     });
   };
 
+  // Notification Handlers
+  const handleMarkAsRead = async (id) => {
+    try {
+      await NotificationService.markAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.notification_id === id ? { ...n, is_read: true } : n,
+        ),
+      );
+    } catch (err) {
+      toast.error("Failed to update notification");
+    }
+  };
+
+  const handleDeleteNotif = async (id) => {
+    try {
+      await NotificationService.deleteNotification(id);
+      setNotifications((prev) => prev.filter((n) => n.notification_id !== id));
+      toast.success("Notification deleted");
+    } catch (err) {
+      toast.error("Failed to delete notification");
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
   const navItems = [
     { id: "orders", label: "My Collections", icon: <ShoppingBag size={18} /> },
+    {
+      id: "notifications",
+      label: "Notifications",
+      icon: <Bell size={18} />,
+      count: unreadCount,
+    },
     { id: "profile", label: "Personal Info", icon: <User size={18} /> },
     { id: "settings", label: "Account Settings", icon: <Settings size={18} /> },
   ];
+
+  const filteredNotifs = notifications.filter((n) => {
+    if (filter === "UNREAD") return !n.is_read;
+    return true;
+  });
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -68,9 +115,9 @@ export default function BuyerDashboard() {
             <button
               key={item.id}
               onClick={() => setActiveSection(item.id)}
-              className={`w-full flex items-center gap-4 px-4 py-3 text-[11px] uppercase tracking-widest font-bold transition-all ${
+              className={`w-full flex items-center justify-between px-4 py-3 text-[11px] uppercase tracking-widest font-bold transition-all ${
                 activeSection === item.id
-                  ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
+                  ? "bg-slate-900 text-white"
                   : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
@@ -82,7 +129,7 @@ export default function BuyerDashboard() {
 
         <div className="p-4 border-t border-slate-50">
           <button
-            onClick={handleLogout} // Updated to use local handler with toast
+            onClick={handleLogout}
             className="w-full flex items-center gap-4 px-4 py-3 text-[11px] uppercase tracking-widest font-bold text-rose-500 hover:bg-rose-50 transition-colors"
           >
             <LogOut size={18} />
@@ -92,8 +139,9 @@ export default function BuyerDashboard() {
       </aside>
 
       {/* --- MAIN CONTENT AREA --- */}
-      <main className="flex-1 p-8 lg:p-12 overflow-y-auto">
+      <main className="flex-1 p-8 lg:p-12 overflow-y-auto text-slate-900">
         <div className="max-w-5xl mx-auto space-y-10">
+          {/* COLLECTIONS SECTION */}
           {activeSection === "orders" && (
             <>
               <header className="flex flex-col gap-2">
@@ -123,7 +171,6 @@ export default function BuyerDashboard() {
                 />
               </div>
 
-              {/* Order Table... same as before */}
               <Card className="rounded-none border-slate-200 shadow-sm">
                 <CardHeader className="border-b border-slate-100">
                   <CardTitle className="text-xl font-serif">
@@ -162,7 +209,7 @@ export default function BuyerDashboard() {
                                     <img
                                       key={i}
                                       src={"/image" + item.artwork.main_image}
-                                      className="w-10 h-10 rounded-full border-2 border-white object-cover shadow-sm"
+                                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
                                       title={item.artwork.title}
                                     />
                                   ))}
@@ -188,6 +235,95 @@ export default function BuyerDashboard() {
             </>
           )}
 
+          {/* NOTIFICATIONS SECTION */}
+          {activeSection === "notifications" && (
+            <div className="space-y-8">
+              <header className="flex justify-between items-end">
+                <div>
+                  <h1 className="text-4xl font-serif font-bold text-slate-900">
+                    Notifications
+                  </h1>
+                  <p className="text-slate-500 font-sans tracking-wide">
+                    Stay updated on your activity.
+                  </p>
+                </div>
+                <div className="flex gap-4 border-b border-slate-100 pb-1">
+                  {["ALL", "UNREAD"].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      className={`text-[10px] font-mono tracking-widest transition-all ${filter === f ? "text-slate-900 border-b border-slate-900 pb-1" : "text-slate-400"}`}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </header>
+
+              <div className="border-t border-slate-100">
+                {isLoading ? (
+                  <p className="py-10 text-center font-mono text-[10px] text-slate-400 uppercase">
+                    Synchronizing...
+                  </p>
+                ) : filteredNotifs.length === 0 ? (
+                  <p className="py-20 text-center font-mono text-[10px] text-slate-400 uppercase">
+                    No records found.
+                  </p>
+                ) : (
+                  filteredNotifs.map((notif) => (
+                    <div
+                      key={notif.notification_id}
+                      className={`flex items-center justify-between py-6 border-b border-slate-50 group ${!notif.is_read ? "bg-slate-50/50 -mx-4 px-4" : ""}`}
+                    >
+                      <div className="flex gap-4 items-start">
+                        {notif.priority === "high" ? (
+                          <AlertTriangle
+                            size={16}
+                            className="text-rose-500 mt-1"
+                          />
+                        ) : (
+                          <div
+                            className={`w-1.5 h-1.5 rounded-full mt-2 ${notif.is_read ? "bg-slate-200" : "bg-slate-900"}`}
+                          />
+                        )}
+                        <div>
+                          <h3
+                            className={`text-sm tracking-tight ${!notif.is_read ? "font-bold" : "text-slate-600"}`}
+                          >
+                            {notif.title}
+                          </h3>
+                          <p className="text-xs text-slate-500 font-serif mt-1">
+                            {notif.message}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {!notif.is_read && (
+                          <button
+                            onClick={() =>
+                              handleMarkAsRead(notif.notification_id)
+                            }
+                            className="text-slate-400 hover:text-slate-900"
+                          >
+                            <MailOpen size={16} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() =>
+                            handleDeleteNotif(notif.notification_id)
+                          }
+                          className="text-slate-400 hover:text-rose-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
           {activeSection === "profile" && <BuyerProfileSection />}
           {activeSection === "settings" && <AccountSettingsSection />}
         </div>
@@ -196,7 +332,6 @@ export default function BuyerDashboard() {
   );
 }
 
-// Sub-components for cleaner code
 function StatCard({ icon, title, value }) {
   return (
     <Card className="rounded-none border-slate-200">
@@ -220,7 +355,6 @@ function StatusBadge({ status }) {
     PENDING: "bg-amber-100 text-amber-700 border-amber-200",
     PAID: "bg-emerald-100 text-emerald-700 border-emerald-200",
     FAILED: "bg-rose-100 text-rose-700 border-rose-200",
-    CANCELLED: "bg-rose-100 text-rose-700 border-rose-200",
   };
   return (
     <Badge variant="outline" className={`rounded-none px-3 ${styles[status]}`}>

@@ -42,6 +42,7 @@ import ViewerLivePage from "./pages/LiveExhibitionPage";
 import AdminExhibitionDetailPage from "./pages/dashboard/admin/ExhibitionManagement";
 import AdminArchivedContentPage from "./pages/dashboard/admin/ArchivesPage";
 import ClassificationDetailPage from "./pages/ExhibitionDetails";
+import NotificationsSection from "./pages/dashboard/NotificationsPage";
 
 function DashboardIndex() {
   const { user } = useAuth();
@@ -94,6 +95,10 @@ export default function App() {
                 <Route index element={<DashboardIndex />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="artworks" element={<MyArtworksPage />} />
+                <Route
+                  path="notifications"
+                  element={<NotificationsSection />}
+                />
               </Route>
             </Route>
 

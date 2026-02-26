@@ -12,7 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { toast, Toaster } from "sonner";
-import AuthService from "@/api/services/authService"; // Using the structure we built
+import AuthService from "@/api/services/authService";
 import { useNavigate } from "react-router";
 import Autocomplete from "@/components/autoComplet";
 import { RWANDA_LOCATIONS, SPECIALTIES } from "@/utils/consts";
@@ -53,8 +53,6 @@ export default function RegisterPage() {
 
   const handleRegister = async () => {
     setIsLoading(true);
-
-    // Mapping frontend fields to backend controller expectations
     const registrationPromise = AuthService.register({
       name: formData.fullName,
       email: formData.email,
@@ -71,9 +69,7 @@ export default function RegisterPage() {
       loading: "Creating your Craftfolio...",
       success: () => {
         setIsLoading(false);
-        setTimeout(() => {
-          navigate("/login", { replace: true });
-        }, 1000);
+        setTimeout(() => navigate("/login", { replace: true }), 1000);
         return "Account created successfully!";
       },
       error: (err) => {
@@ -100,7 +96,7 @@ export default function RegisterPage() {
             </div>
           ))}
         </div>
-        <div className="absolute inset-0 flex items-end p-12 bg-linear-to-t from-slate-900/80">
+        <div className="absolute inset-0 flex items-end p-12 bg-gradient-to-t from-slate-900/80">
           <div className="text-white">
             <h2 className="text-5xl font-serif font-bold mb-3">
               Join the Heritage
@@ -112,7 +108,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right Section - Dynamic Form */}
+      {/* Right Section - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12">
         <div className="w-full max-w-md">
           <div className="mb-10">
@@ -125,13 +121,13 @@ export default function RegisterPage() {
           </div>
 
           <div className="mb-12">
-            <a
-              href="/"
-              className="text-sm flex items-center gap-x-4 font-bold text-slate-700 hover:text-slate-900 hover:underline hover:decoration-slate-900"
+            <button
+              onClick={() => navigate(-1)}
+              className="text-sm flex items-center gap-x-4 font-bold text-slate-700 hover:text-slate-900 transition-colors"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4 inline-block ml-1"
+                className="w-4 h-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -143,9 +139,10 @@ export default function RegisterPage() {
                   d="M15 19l-7-7 7-7"
                 />
               </svg>
-              Back to Home
-            </a>
+              Back
+            </button>
           </div>
+
           <Card className="border-slate-200 shadow-none rounded-none">
             <CardHeader>
               <CardTitle className="font-serif">
@@ -222,26 +219,74 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  {/* ARTIST ONLY FIELDS - Based on Migration */}
                   {formData.role === "author" && (
                     <>
                       <div className="grid grid-cols-2 gap-4">
-                        {/* Specialty Field */}
+                        {/* Specialty Field - Changed to Suggestion List */}
+                        {/* Specialty Field - Autosearch & Custom Logic */}
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
                             Specialty
                           </Label>
-                          <Autocomplete
-                            options={SPECIALTIES}
+                          <Input
+                            className="rounded-none border-slate-200 focus:border-slate-900 transition-colors"
+                            placeholder="Start typing specialty..."
                             value={formData.specialty}
-                            placeholder="Select Specialty"
-                            onChange={(val) =>
-                              setFormData({ ...formData, specialty: val })
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                specialty: e.target.value,
+                              })
                             }
                           />
+
+                          <div className="flex flex-wrap gap-1.5 mt-2 max-h-32 overflow-y-auto p-1 border border-transparent">
+                            {/* Filter the list based on input */}
+                            {SPECIALTIES.filter((s) =>
+                              s
+                                .toLowerCase()
+                                .includes(formData.specialty.toLowerCase()),
+                            ).map((spec) => (
+                              <button
+                                key={spec}
+                                type="button"
+                                onClick={() =>
+                                  setFormData({ ...formData, specialty: spec })
+                                }
+                                className={`text-[9px] px-2 py-1 border transition-all uppercase font-bold ${
+                                  formData.specialty.toLowerCase() ===
+                                  spec.toLowerCase()
+                                    ? "bg-slate-900 text-white border-slate-900"
+                                    : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-400"
+                                }`}
+                              >
+                                {spec}
+                              </button>
+                            ))}
+
+                            {/* Fallback: If typing something NOT in the list, show what they are writing as a "New" option */}
+                            {formData.specialty &&
+                              !SPECIALTIES.some(
+                                (s) =>
+                                  s.toLowerCase() ===
+                                  formData.specialty.toLowerCase(),
+                              ) && (
+                                <div className="flex items-center gap-2 w-full mt-1">
+                                  <span className="text-[10px] text-slate-400 italic">
+                                    No match found. Using:
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="text-[9px] px-2 py-1 border border-dashed border-slate-400 bg-slate-50 text-slate-900 uppercase font-bold"
+                                  >
+                                    {formData.specialty}
+                                  </button>
+                                </div>
+                              )}
+                          </div>
                         </div>
 
-                        {/* Location Field */}
+                        {/* Location Field - Unchanged as requested */}
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
                             Location
@@ -256,6 +301,7 @@ export default function RegisterPage() {
                           />
                         </div>
                       </div>
+
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-xs font-bold uppercase tracking-wider">
@@ -304,7 +350,7 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 pt-4">
                     <Button
                       variant="outline"
                       onClick={() => setStep(1)}
@@ -323,8 +369,8 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              <div className="mt-6 pt-6 border-t border-slate-100">
-                <p className="text-xs text-slate-500 text-center font-sans uppercase tracking-widest">
+              <div className="mt-6 pt-6 border-t border-slate-100 text-center">
+                <p className="text-xs text-slate-500 font-sans uppercase tracking-widest">
                   Already have an account?{" "}
                   <a
                     href="/login"

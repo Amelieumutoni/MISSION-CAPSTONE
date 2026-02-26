@@ -43,6 +43,19 @@ User.associate = (models) => {
       as: "exhibitions",
     });
   }
+
+  if (models.Notification) {
+    User.hasMany(models.Notification, {
+      foreignKey: "user_id",
+      as: "notifications",
+    });
+
+    User.hasMany(models.Notification, {
+      foreignKey: "actor_id",
+      as: "notificationsTriggered",
+    });
+  }
+
   if (models.Order) {
     User.hasMany(models.Order, { foreignKey: "buyer_id", as: "orders" });
   } else {

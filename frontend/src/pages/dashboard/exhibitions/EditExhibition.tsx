@@ -44,21 +44,34 @@ export default function ExhibitionEdit() {
   });
 
   const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
+  const minDateTime = new Date().toISOString().slice(0, 16);
 
   useEffect(() => {
     const fetchEx = async () => {
       try {
         const res = await ExhibitionService.getExhibitionByIdByMe(id!);
         const ex = res.data;
-        setForm({
+
+        const formatDateForInput = (dateString) => {
+          if (!dateString) return "";
+          const d = new Date(dateString);
+          const offset = d.getTimezoneOffset() * 60000; // offset in milliseconds
+          const localISOTime = new Date(d - offset).toISOString().slice(0, 16);
+          return localISOTime;
+        };
+
+        // Use this when setting your form state
+        const initialState = {
           title: ex.title || "",
           description: ex.description || "",
           type: ex.type || "CLASSIFICATION",
           stream_link: ex.stream_link || "",
-          start_date: ex.start_date?.slice(0, 10) || "",
-          end_date: ex.end_date?.slice(0, 10) || "",
+          start_date: formatDateForInput(ex.start_date), // Formatted!
+          end_date: formatDateForInput(ex.end_date), // Formatted!
           is_published: ex.is_published || false,
-        });
+        };
+
+        setForm(initialState);
         if (ex.banner_image) {
           setBannerPreview(
             ex.banner_image.startsWith("http")
@@ -335,9 +348,10 @@ export default function ExhibitionEdit() {
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                     />
                     <Input
-                      type="date"
+                      type="datetime-local"
                       name="start_date"
                       value={form.start_date}
+                      min={minDateTime}
                       onChange={handleChange}
                       required
                       className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
@@ -354,10 +368,13 @@ export default function ExhibitionEdit() {
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                     />
                     <Input
-                      type="date"
+                      type="datetime-local"
                       name="end_date"
                       value={form.end_date}
                       onChange={handleChange}
+                      min={
+                        form.start_date || new Date().toISOString().slice(0, 16)
+                      }
                       required
                       className="pl-9 rounded-none border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600 h-11 text-xs"
                     />

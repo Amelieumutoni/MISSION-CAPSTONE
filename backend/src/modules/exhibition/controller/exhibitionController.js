@@ -1,3 +1,4 @@
+const notificationEmitter = require("../../../events/EventEmitter");
 const {
   Exhibition,
   Artwork,
@@ -49,18 +50,21 @@ exports.createExhibition = async (req, res) => {
       calculatedStatus = "UPCOMING";
     }
 
-    const exhibition = await Exhibition.create({
-      author_id: req.user.id,
-      title,
-      description,
-      type,
-      status: calculatedStatus,
-      stream_link: type === "LIVE" ? stream_link : null,
-      start_date: type === "LIVE" ? start : null,
-      end_date: type === "LIVE" ? end : null,
-      banner_image: `/store/exhibitions/${req.file.filename}`,
-      is_published: false,
-    });
+    const [exhibition, admin] = await Promise.all([
+      Exhibition.create({
+        author_id: req.user.id,
+        title,
+        description,
+        type,
+        status: calculatedStatus,
+        stream_link: type === "LIVE" ? stream_link : null,
+        start_date: type === "LIVE" ? start : new Date(),
+        end_date: type === "LIVE" ? end : null,
+        banner_image: `/store/exhibitions/${req.file.filename}`,
+        is_published: false,
+      }),
+      User.findOne({ where: { role: "ADMIN" } }),
+    ]);
 
     if (type === "LIVE") {
       const realStreamLink = `${process.env.FRONTEND_URL}/exhibitions/${exhibition.exhibition_id}/watch`;
@@ -70,6 +74,24 @@ exports.createExhibition = async (req, res) => {
         exhibition_id: exhibition.exhibition_id,
         stream_status: "IDLE",
         current_viewers: 0,
+      });
+    }
+
+    if (admin) {
+      notificationEmitter.emit("sendNotification", {
+        recipient_id: admin.user_id,
+        actor_id: req.user.id,
+        type: "admin_message",
+        title: "New Exhibition Pending Review",
+        message: `Artist "${req.user.email}" created a ${type} exhibition: "${title}". It requires visibility approval.`,
+        entity_type: "exhibition",
+        entity_id: exhibition.exhibition_id,
+        priority: "high",
+        metadata: {
+          banner: exhibition.banner_image,
+          type: type,
+          stream_link: exhibition.stream_link,
+        },
       });
     }
 
@@ -102,6 +124,17 @@ exports.toggleVisibility = async (req, res) => {
 
     exhibition.is_published = is_published;
     await exhibition.save();
+
+    notificationEmitter.emit("sendNotification", {
+      recipient_id: exhibition.author_id,
+      actor_id: req.user.id,
+      type: "exhibition_live",
+      title: is_published ? "Exhibition Published" : "Exhibition Hidden",
+      message: `Your exhibition "${exhibition.title}" is now ${is_published ? "visible to the public" : "hidden"}.`,
+      entity_type: "exhibition",
+      entity_id: exhibition.exhibition_id,
+      priority: "normal",
+    });
 
     res.json({
       success: true,

@@ -56,8 +56,8 @@ const Exhibition = sequelize.define(
         },
       },
     },
-    start_date: { type: DataTypes.DATE },
-    end_date: { type: DataTypes.DATE },
+    start_date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    end_date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },
   {
     tableName: "exhibitions",

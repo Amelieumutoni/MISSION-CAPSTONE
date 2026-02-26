@@ -214,10 +214,11 @@ export default function NewExhibition() {
                   Start Date
                 </label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   required
                   className="w-full bg-transparent border-b border-border py-2 outline-none"
                   value={formData.start_date}
+                  min={new Date().toISOString().slice(0, 16)}
                   onChange={(e) =>
                     setFormData({ ...formData, start_date: e.target.value })
                   }
@@ -228,10 +229,13 @@ export default function NewExhibition() {
                   End Date
                 </label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   required
                   className="w-full bg-transparent border-b border-border py-2 outline-none"
                   value={formData.end_date}
+                  min={
+                    formData.start_date || new Date().toISOString().slice(0, 16)
+                  }
                   onChange={(e) =>
                     setFormData({ ...formData, end_date: e.target.value })
                   }

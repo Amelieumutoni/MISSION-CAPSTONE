@@ -1,3 +1,4 @@
+const notificationEmitter = require("../../../events/EventEmitter");
 const { Artwork, User } = require("../../index");
 const path = require("path");
 
@@ -31,6 +32,18 @@ exports.createArtwork = async (req, res) => {
       price,
       stock_quantity,
       main_image: `/store/artworks/${req.file.filename}`,
+    });
+
+    notificationEmitter.emit("sendNotification", {
+      recipient_id: req.user.id,
+      actor_id: req.user.id,
+      type: "artwork_approved", // Or a custom type like 'artwork_created'
+      title: "Artwork Cataloged",
+      message: `"${title}" has been successfully added to your archival records.`,
+      entity_type: "artwork",
+      entity_id: artwork.artwork_id,
+      priority: "normal",
+      metadata: { thumbnail: artwork.main_image },
     });
 
     res.status(201).json({
@@ -154,6 +167,17 @@ exports.updateArtwork = async (req, res) => {
       main_image: mainImage,
     });
 
+    notificationEmitter.emit("sendNotification", {
+      recipient_id: artwork.author_id,
+      actor_id: req.user.id,
+      type: "artwork_featured", // Adjust type as needed
+      title: "Record Updated",
+      message: `The metadata for "${artwork.title}" has been modified.`,
+      entity_type: "artwork",
+      entity_id: artwork.artwork_id,
+      priority: "low",
+    });
+
     res.status(200).json({
       success: true,
       message: "Artwork updated successfully",
@@ -183,6 +207,18 @@ exports.archiveArtwork = async (req, res) => {
     }
 
     await artwork.update({ status: "ARCHIVED" });
+
+    notificationEmitter.emit("sendNotification", {
+      recipient_id: artwork.author_id,
+      actor_id: req.user.id,
+      type: "artwork_rejected",
+      title: "Artwork Archived",
+      message: `The artwork "${artwork.title}" has been moved to the archive and is no longer public.`,
+      entity_type: "artwork",
+      entity_id: artwork.artwork_id,
+      priority: "high",
+      metadata: { archived_by: req.user.role },
+    });
 
     res.status(200).json({
       success: true,

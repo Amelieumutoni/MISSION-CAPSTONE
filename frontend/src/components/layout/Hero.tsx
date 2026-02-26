@@ -1,7 +1,9 @@
 import { Play } from "lucide-react";
 import { Button } from "../ui/button";
+import { useNavigate } from "react-router";
 
 export default function HeroSection() {
+  const navigate = useNavigate();
   return (
     <section className="px-8 py-12 lg:py-24">
       <div className="grid lg:grid-cols-12 gap-12 items-center">
@@ -14,10 +16,14 @@ export default function HeroSection() {
             Rwandan master artisans with global collectors.
           </p>
           <div className="flex gap-4">
-            <Button className="rounded-none bg-slate-900 text-white px-8 py-6 text-xs font-bold uppercase tracking-widest hover:bg-slate-800">
+            <Button
+              onClick={() => navigate("/collections")}
+              className="rounded-none bg-slate-900 text-white px-8 py-6 text-xs font-bold uppercase tracking-widest hover:bg-slate-800"
+            >
               Explore Works
             </Button>
             <Button
+              onClick={() => navigate("/archives")}
               variant="outline"
               className="rounded-none border-slate-900 px-8 py-6 text-xs font-bold uppercase tracking-widest hover:bg-slate-50"
             >

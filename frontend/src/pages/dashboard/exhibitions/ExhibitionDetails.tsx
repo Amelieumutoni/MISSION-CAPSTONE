@@ -177,8 +177,15 @@ export default function ExhibitionDetail() {
                     size={14}
                     className="text-slate-400 dark:text-slate-500"
                   />
-                  {new Date(ex.start_date!).toLocaleDateString()} —{" "}
-                  {new Date(ex.end_date!).toLocaleDateString()}
+                  {new Date(ex.start_date).toLocaleString([], {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}{" "}
+                  —{" "}
+                  {new Date(ex.end_date).toLocaleString([], {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
                 </div>
               </div>
 
@@ -243,7 +250,7 @@ export default function ExhibitionDetail() {
               Current Curation
             </h4>
             <div className="flex items-center gap-2">
-              {ex.type === "LIVE" && (
+              {ex.type === "LIVE" && ex.status === "LIVE" && (
                 <Button
                   size="sm"
                   disabled={!canStream}

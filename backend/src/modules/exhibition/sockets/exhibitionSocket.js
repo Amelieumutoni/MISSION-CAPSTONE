@@ -1,6 +1,7 @@
 // src/modules/livestream/sockets/exhibitionSocket.js
 const { RoomServiceClient } = require("livekit-server-sdk");
 const { LiveStream, Exhibition } = require("../../index");
+const notificationEmitter = require("../../../events/EventEmitter");
 
 // 1. CRITICAL: Trim keys to prevent the 401 Unauthorized error
 const API_KEY = process.env.LIVEKIT_API_KEY?.trim();
@@ -26,6 +27,9 @@ module.exports = (io) => {
       socket.data.role = role;
 
       try {
+        const exhibition = await Exhibition.findByPk(exhibitionId);
+        const isLive = exhibition && exhibition.status === "LIVE";
+
         if (role === "AUTHOR") {
           // Update both Exhibition and LiveStream tables
           await Exhibition.update(
@@ -39,9 +43,10 @@ module.exports = (io) => {
 
           // Notify everyone in the room that stream is starting
           io.to(roomName).emit("stream-started");
+          await broadcastViewerCount(io, roomName, exhibitionId);
         }
 
-        if (role === "VIEWER" && !socket.data.counted) {
+        if (role === "VIEWER" && isLive && !socket.data.counted) {
           socket.data.counted = true;
 
           await LiveStream.increment("total_views", {
@@ -50,10 +55,11 @@ module.exports = (io) => {
 
           // Notify artist that a viewer joined
           socket.to(roomName).emit("viewer-joined");
+
+          await broadcastViewerCount(io, roomName, exhibitionId);
         }
 
         // Update the 'current_viewers' (Live count)
-        await broadcastViewerCount(io, roomName, exhibitionId);
       } catch (err) {
         console.error("Error in join-exhibition:", err);
       }
@@ -64,13 +70,14 @@ module.exports = (io) => {
       const roomName = `exhibition_${exhibitionId}`;
 
       try {
-        // Update stream status to STREAMING
-        await LiveStream.update(
-          { stream_status: "STREAMING" },
-          { where: { exhibition_id: exhibitionId } },
-        );
+        const [admin] = await Promise.all([
+          User.findByPk({ where: { role: "ADMIN" } }),
+          await LiveStream.update(
+            { stream_status: "STREAMING" },
+            { where: { exhibition_id: exhibitionId } },
+          ),
+        ]);
 
-        // Create LiveKit room if it doesn't exist
         try {
           await roomService.createRoom({
             name: roomName,
@@ -82,6 +89,17 @@ module.exports = (io) => {
           // Room might already exist, that's fine
           console.log(`Room ${roomName} might already exist:`, roomErr.message);
         }
+
+        notificationEmitter.emit("sendNotification", {
+          recipient_id: admin.user_id,
+          actor_id: exhibition.author_id,
+          type: "exhibition_live",
+          title: "🔴 Exhibition is LIVE",
+          message: `The exhibition "${exhibition.title}" by ${exhibition.author.name} is now broadcasting.`,
+          entity_type: "exhibition",
+          entity_id: exhibitionId,
+          priority: "high",
+        });
 
         // Notify all viewers that stream has started
         io.to(roomName).emit("stream-started");

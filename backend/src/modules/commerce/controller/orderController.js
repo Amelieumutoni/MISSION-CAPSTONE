@@ -1,4 +1,5 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const notificationEmitter = require("../../../events/EventEmitter");
 const { Order, OrderItem, Artwork, User, sequelize } = require("../../index");
 const { Op } = require("sequelize");
 // Creating an order
@@ -16,6 +17,7 @@ exports.createOrder = async (req, res) => {
     let calculatedTotal = 0;
     const stripeLineItems = [];
     const orderItemsToCreate = [];
+    const artistNotifications = [];
 
     for (const item of items) {
       const artwork = await Artwork.findByPk(item.artwork_id, { transaction });
@@ -56,6 +58,21 @@ exports.createOrder = async (req, res) => {
         quantity: item.quantity,
         price_at_purchase: itemPrice,
       });
+
+      artistNotifications.push({
+        recipient_id: artwork.author_id,
+        actor_id: req.user.id,
+        type: "artwork_sold",
+        title: "Potential Sale: Artwork Ordered",
+        message: `Your artwork "${artwork.title}" has been added to a new order. Current stock: ${artwork.stock_quantity}.`,
+        entity_type: "artwork",
+        entity_id: artwork.artwork_id,
+        priority: "normal",
+        metadata: {
+          quantity_ordered: item.quantity,
+          remaining_stock: artwork.stock_quantity,
+        },
+      });
     }
 
     // Create order as PENDING — no stock touched yet
@@ -85,6 +102,22 @@ exports.createOrder = async (req, res) => {
 
     await newOrder.update({ stripe_session_id: session.id }, { transaction });
     await transaction.commit();
+
+    notificationEmitter.emit("sendNotification", {
+      recipient_id: req.user.id,
+      actor_id: req.user.id,
+      type: "order_placed",
+      title: "Order Initiated",
+      message: `Your order for ${items.length} item(s) has been created. Please complete the payment to secure your artwork.`,
+      entity_type: "order",
+      entity_id: newOrder.order_id,
+      priority: "normal",
+      metadata: { total: calculatedTotal, checkout_url: session.url },
+    });
+
+    artistNotifications.forEach((notif) => {
+      notificationEmitter.emit("sendNotification", notif);
+    });
 
     res.status(201).json({
       success: true,
@@ -222,6 +255,18 @@ exports.cancelOrder = async (req, res) => {
 
       await order.update({ status: "CANCELLED" }, { transaction });
       await transaction.commit();
+
+      notificationEmitter.emit("sendNotification", {
+        recipient_id: order.buyer_id,
+        actor_id: req.user.id, // Records if Buyer or Admin cancelled it
+        type: "order_cancelled",
+        title: "Order Cancelled",
+        message: `Order #${orderId} has been successfully cancelled and items have been returned to the gallery.`,
+        entity_type: "order",
+        entity_id: orderId,
+        priority: "normal",
+      });
+
       return res
         .status(200)
         .json({ message: "Order cancelled and stock restored." });

@@ -1,3 +1,4 @@
+const notificationEmitter = require("../../../events/EventEmitter");
 const { User, Profile } = require("../../index");
 
 exports.getAllArtists = async (req, res) => {
@@ -68,7 +69,42 @@ exports.updateArtistStatus = async (req, res) => {
       return res.status(404).json({ message: "Artisan not found" });
     }
 
+    const oldStatus = user.status;
     await user.update({ status });
+
+    if (oldStatus !== status) {
+      let notifType = "admin_message";
+      let notifTitle = "Account Status Updated";
+      let notifMessage = `Your account status has been changed to ${status} by the archival administration.`;
+
+      if (status === "ACTIVE") {
+        notifType = "account_reactivated";
+        notifTitle = "Account Activated";
+        notifMessage =
+          "Welcome! Your artist profile is now active. You can now publish exhibitions and manage your catalog.";
+      } else if (status === "INACTIVE") {
+        notifType = "account_suspended";
+        notifTitle = "Account Deactivated";
+        notifMessage =
+          "Your artist profile has been set to inactive. Please contact the administrator for more details.";
+      }
+
+      notificationEmitter.emit("sendNotification", {
+        recipient_id: user.user_id,
+        actor_id: req.user.id,
+        type: notifType,
+        title: notifTitle,
+        message: notifMessage,
+        entity_type: "user",
+        entity_id: user.id,
+        priority: status === "ACTIVE" ? "high" : "urgent",
+        metadata: {
+          previous_status: oldStatus,
+          new_status: status,
+          updated_at: new Date(),
+        },
+      });
+    }
 
     res.status(200).json({
       success: true,

@@ -7,6 +7,9 @@ const app = express();
 const cors = require("cors");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
+require("./src/modules/notifications/events/notificationEvents");
+require("./src/jobs/liveEventChecker");
+
 const sequelize = require("./src/utils/database/connection");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./src/utils/swagger");
@@ -61,7 +64,6 @@ async function bootstrap() {
     await sequelize.authenticate();
     sequelize.sync({ alter: true });
 
-    // 1. Create the HTTP server using the Express app
     const server = http.createServer(app);
 
     // 2. Initialize Socket.io
@@ -73,10 +75,8 @@ async function bootstrap() {
       },
     });
 
-    // 3. Initialize your Live Stream socket logic
     setupExhibitionSockets(io);
 
-    // 4. Start the server using 'server.listen' instead of 'app.listen'
     server.listen(port, () => {
       console.log(`Server & Sockets running on http://localhost:${port}`);
     });

@@ -2,10 +2,12 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { User, Profile } = require("../../index"); // loaded via modules/index.js
 const sequelize = require("../../../utils/database/connection");
+const notificationEmitter = require("../../../events/EventEmitter");
 
 require("dotenv").config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 
 exports.register = async (req, res) => {
   const t = await sequelize.transaction();
@@ -15,10 +17,14 @@ exports.register = async (req, res) => {
 
     // 1. Check if user exists
     const existingUser = await User.findOne({ where: { email } });
+
     if (existingUser) {
       await t.rollback();
       return res.status(400).json({ message: "Email already in use" });
     }
+
+    // Fetch admin outside or inside, but before commit
+    const adminUser = await User.findOne({ where: { role: "ADMIN" } });
 
     // 2. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -35,7 +41,6 @@ exports.register = async (req, res) => {
       { transaction: t },
     );
 
-    // 4. Automatically create the Profile within the transaction
     await Profile.create(
       {
         user_id: user.user_id,
@@ -44,9 +49,39 @@ exports.register = async (req, res) => {
       { transaction: t },
     );
 
+    // COMMIT HERE
     await t.commit();
 
-    res.status(201).json({
+    try {
+      notificationEmitter.emit("sendNotification", {
+        recipient_id: user.user_id,
+        actor_id: user.user_id,
+        type: "welcome",
+        title: `Welcome to the Archive, ${name}!`,
+        message:
+          role?.toUpperCase() === "BUYER"
+            ? "Your account is ready to explore craftfolio artist and designers workspace."
+            : "Your application is under review. We will notify you once an admin activates your artist profile.",
+        priority: "high",
+      });
+
+      if (adminUser && role?.toUpperCase() !== "BUYER") {
+        notificationEmitter.emit("sendNotification", {
+          recipient_id: adminUser.user_id,
+          actor_id: user.user_id,
+          type: "admin_message",
+          title: "New Artist Pending Approval",
+          message: `A new artist (${name}) has registered and is waiting for activation.`,
+          entity_type: "user",
+          entity_id: user.user_id,
+          priority: "urgent",
+        });
+      }
+    } catch (notifErr) {
+      console.error("Notification Emitter Error:", notifErr);
+    }
+
+    return res.status(201).json({
       message: "User and Profile registered successfully",
       user: {
         id: user.user_id,
@@ -76,7 +111,7 @@ exports.login = async (req, res) => {
     const token = jwt.sign(
       { id: user.user_id, email: user.email, role: user.role },
       JWT_SECRET,
-      { expiresIn: "10min" },
+      { expiresIn: JWT_EXPIRES_IN },
     );
 
     res.json({
@@ -86,6 +121,7 @@ exports.login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        status: user.status,
       },
     });
   } catch (err) {
@@ -108,6 +144,7 @@ exports.me = async (req, res) => {
             "profile_picture",
             "specialty",
             "years_experience",
+            "phone_contact",
           ],
         },
       ],
@@ -133,9 +170,10 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({ message: "Profile not found" });
     }
 
-    console.log(req.file);
-
-    const filePath = `/store/profiles/${req.file.filename}`;
+    const filePath =
+      req.file === undefined
+        ? profile.profile_picture
+        : `/store/profiles/${req.file.filename} `;
 
     await profile.update({
       bio: bio || profile.bio,
@@ -178,7 +216,6 @@ exports.updateAccountSettings = async (req, res) => {
       user.email = email;
     }
 
-    // --- 2. UPDATE PASSWORD (Requires Verification) ---
     if (newPassword) {
       if (!currentPassword) {
         return res
@@ -194,12 +231,20 @@ exports.updateAccountSettings = async (req, res) => {
           .json({ message: "Current password is incorrect" });
       }
 
-      // Hash the new password
       const salt = await bcrypt.genSalt(10);
       user.password_hash = await bcrypt.hash(newPassword, salt);
     }
 
     await user.save();
+
+    notificationEmitter.emit("sendNotification", {
+      recipient_id: user.user_id,
+      actor_id: user.user_id,
+      type: "password_changed",
+      title: "Account settings Updated",
+      message: `Your account email and password has been successfully changed to ${email}.`,
+      priority: "high",
+    });
 
     // Return the updated user (excluding sensitive hash)
     res.json({

@@ -75,7 +75,7 @@ export const ExhibitionService = {
    * Replace/Set the entire array of artworks for the exhibition
    */
   assignArtworks: async (exhibitionId: string, artworkIds: string[]) => {
-    const response = await api.put(`/exhibitions/${exhibitionId}/artwork`, {
+    const response = await api.put(`/exhibitions/${exhibitionId}/artworks`, {
       artworkIds,
     });
     return response.data;

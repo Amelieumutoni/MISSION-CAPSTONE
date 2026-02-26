@@ -9,6 +9,7 @@ const ArtRoute = require("../modules/authentication/routes/ArtRoute");
 const OrdersRoute = require("../modules/commerce/routes/OrdersRoute");
 const WebhookRoute = require("../modules/commerce/routes/WebhookRoute");
 const LiveStreamRoute = require("../modules/exhibition/routes/LiveStream");
+const NotificationRoute = require("../modules/notifications/routes/NotificationsRoute");
 
 app.use("/auth", AuthRouter);
 app.use("/artworks", ArtworksRouter);
@@ -16,5 +17,6 @@ app.use("/exhibitions", ExhibitionRoute);
 app.use("/artists", ArtRoute);
 app.use("/orders", OrdersRoute);
 app.use("/livekit", LiveStreamRoute);
+app.use("/notifications", NotificationRoute);
 
 module.exports = app;

@@ -81,6 +81,7 @@ export default function LoginPage() {
       success: (data) => {
         setIsLoading(false);
 
+        console.log(data);
         if (data.user.status === "INACTIVE" && data.user.role === "AUTHOR") {
           toast.info("Account Pending", {
             description: "An admin is currently reviewing your artist profile.",
