@@ -5,6 +5,7 @@ import {
   VideoTrack,
   RoomAudioRenderer,
   useTracks,
+  useLocalParticipant,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import "@livekit/components-styles";
@@ -29,6 +30,14 @@ import {
   Flame,
   Star,
   Smile,
+  UserPlus,
+  UserMinus,
+  Crown,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  X,
 } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { livekitToken } from "@/api/services/liveStream";
@@ -36,6 +45,8 @@ import { livekitToken } from "@/api/services/liveStream";
 const LIVEKIT_URL =
   import.meta.env.VITE_LIVEKIT_URL ||
   "wss://livestreaming-yrj2soge.livekit.cloud";
+
+const BASE_URL = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
 type StreamState =
   | "waiting"
@@ -45,13 +56,15 @@ type StreamState =
   | "joining"
   | "reconnecting";
 
+type CoStreamState = "idle" | "pending" | "accepted" | "rejected" | "removed";
+
 interface ChatMessage {
   id: string;
   userId: string | null;
   displayName: string;
   avatar: string | null;
   message: string;
-  role: "AUTHOR" | "VIEWER";
+  role: "AUTHOR" | "VIEWER" | "CO_STREAMER";
   timestamp: number;
 }
 
@@ -61,7 +74,9 @@ interface FloatingReaction {
   x: number;
 }
 
-// ─── Floating reactions overlay ──────────────────────────────────────────────
+// ----------------------------------------------------------------------
+// Floating reactions overlay
+// ----------------------------------------------------------------------
 function FloatingReactions({ reactions }: { reactions: FloatingReaction[] }) {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -78,7 +93,9 @@ function FloatingReactions({ reactions }: { reactions: FloatingReaction[] }) {
   );
 }
 
-// ─── Video renderer ───────────────────────────────────────────────────────────
+// ----------------------------------------------------------------------
+// Video renderer for ordinary viewers (shows all camera tracks)
+// ----------------------------------------------------------------------
 function VideoRenderer({
   viewerCount,
   reactions,
@@ -126,19 +143,178 @@ function VideoRenderer({
   );
 }
 
-// ─── Chat bubble ──────────────────────────────────────────────────────────────
+// ----------------------------------------------------------------------
+// Co‑streamer view (PiP + stage controls)
+// ----------------------------------------------------------------------
+function CoStreamerView({
+  isMuted,
+  isCameraOff,
+  reactions,
+  onLeave,
+}: {
+  isMuted: boolean;
+  isCameraOff: boolean;
+  reactions: FloatingReaction[];
+  onLeave: () => void;
+}) {
+  const { localParticipant } = useLocalParticipant();
+
+  useEffect(() => {
+    if (!localParticipant) return;
+    const audioPub = localParticipant.getTrackPublication(
+      Track.Source.Microphone,
+    );
+    if (audioPub?.track)
+      isMuted ? audioPub.track.mute() : audioPub.track.unmute();
+    const videoPub = localParticipant.getTrackPublication(Track.Source.Camera);
+    if (videoPub?.track)
+      isCameraOff ? videoPub.track.mute() : videoPub.track.unmute();
+  }, [isMuted, isCameraOff, localParticipant]);
+
+  const cameraTracks = useTracks(
+    [{ source: Track.Source.Camera, withPlaceholder: false }],
+    { onlySubscribed: false },
+  );
+  const visibleTracks = cameraTracks.filter(
+    (t) => t.participant.identity !== localParticipant?.identity,
+  );
+
+  // Self video for PiP
+  const selfVideoTrack = cameraTracks.find(
+    (t) => t.participant.identity === localParticipant?.identity,
+  );
+
+  return (
+    <div className="relative w-full h-full">
+      {/* All other participants' videos */}
+      {visibleTracks.length === 0 ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
+          <Radio
+            size={48}
+            strokeWidth={1}
+            className="text-white/20 animate-pulse"
+          />
+        </div>
+      ) : visibleTracks.length === 1 ? (
+        <div className="absolute inset-0 bg-zinc-950">
+          <VideoTrack
+            trackRef={visibleTracks[0]}
+            className="w-full h-full object-cover"
+          />
+          <ParticipantLabel
+            identity={visibleTracks[0].participant.identity}
+            name={visibleTracks[0].participant.name}
+            localIdentity={localParticipant?.identity}
+          />
+        </div>
+      ) : (
+        <div className="absolute inset-0 bg-zinc-950">
+          <div
+            className={`w-full h-full grid gap-px bg-zinc-800 ${
+              visibleTracks.length === 2
+                ? "grid-cols-2"
+                : "grid-cols-2 grid-rows-2"
+            }`}
+          >
+            {visibleTracks.map((trackRef) => (
+              <div
+                key={trackRef.participant.identity}
+                className="relative bg-zinc-900 overflow-hidden"
+              >
+                <VideoTrack
+                  trackRef={trackRef}
+                  className="w-full h-full object-cover"
+                />
+                <ParticipantLabel
+                  identity={trackRef.participant.identity}
+                  name={trackRef.participant.name}
+                  localIdentity={localParticipant?.identity}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <FloatingReactions reactions={reactions} />
+
+      {/* Self PiP */}
+      <div className="absolute bottom-4 right-4 w-28 h-20 bg-zinc-900 border-2 border-zinc-700 overflow-hidden rounded-sm shadow-2xl z-20">
+        {selfVideoTrack && !isCameraOff && selfVideoTrack.publication ? (
+          <VideoTrack
+            trackRef={selfVideoTrack}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-white/30">
+            <VideoOff size={16} />
+          </div>
+        )}
+        <div className="absolute bottom-1 left-1 text-[7px] text-white/60 font-bold bg-black/50 px-1 rounded-sm uppercase">
+          You
+        </div>
+      </div>
+
+      <button
+        onClick={onLeave}
+        className="absolute top-4 right-4 flex items-center gap-1.5 bg-red-600/90 hover:bg-red-600 backdrop-blur px-3 py-1.5 text-white text-[9px] font-bold uppercase tracking-widest transition-colors z-20"
+      >
+        <UserMinus size={11} />
+        Leave Stage
+      </button>
+    </div>
+  );
+}
+
+function ParticipantLabel({
+  identity,
+  name,
+  localIdentity,
+}: {
+  identity: string;
+  name: string | undefined;
+  localIdentity: string | undefined;
+}) {
+  const isSelf = identity === localIdentity;
+  const isGuest =
+    identity.startsWith("viewer_") || identity.startsWith("guest_");
+
+  return (
+    <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur px-2 py-1 rounded-full">
+      <Crown
+        size={9}
+        className={
+          isSelf
+            ? "text-yellow-400"
+            : isGuest
+              ? "text-indigo-400"
+              : "text-yellow-400"
+        }
+      />
+      <span className="text-[9px] text-white/90 uppercase tracking-wide font-bold">
+        {isSelf ? "You" : name || "Artist"}
+      </span>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// Chat bubble (updated to handle CO_STREAMER role)
+// ----------------------------------------------------------------------
 function ChatBubble({ msg }: { msg: ChatMessage }) {
   const isArtist = msg.role === "AUTHOR";
+  const isCoStreamer = msg.role === "CO_STREAMER";
   const initials = msg.displayName.slice(0, 2).toUpperCase();
 
   return (
     <div className="flex items-start gap-2 group px-1">
-      {/* Avatar */}
       <div
         className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[9px] font-bold mt-0.5 ${
           isArtist
             ? "bg-red-500 text-white ring-1 ring-red-400"
-            : "bg-zinc-700 text-zinc-200"
+            : isCoStreamer
+              ? "bg-indigo-500 text-white ring-1 ring-indigo-400"
+              : "bg-zinc-700 text-zinc-200"
         }`}
       >
         {msg.avatar ? (
@@ -155,10 +331,14 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
       <div className="flex-1 min-w-0">
         <span
           className={`text-[10px] font-bold tracking-wider mr-1.5 ${
-            isArtist ? "text-red-400" : "text-zinc-400"
+            isArtist
+              ? "text-red-400"
+              : isCoStreamer
+                ? "text-indigo-400"
+                : "text-zinc-400"
           }`}
         >
-          {isArtist ? "🎨 " : ""}
+          {isArtist ? "🎨 " : isCoStreamer ? "🎤 " : ""}
           {msg.displayName}
         </span>
         <span className="text-[13px] text-white/90 break-words leading-snug">
@@ -169,7 +349,9 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
   );
 }
 
-// ─── Live Chat panel ──────────────────────────────────────────────────────────
+// ----------------------------------------------------------------------
+// Live Chat panel (unchanged aside from using updated ChatBubble)
+// ----------------------------------------------------------------------
 function LiveChat({
   messages,
   onSend,
@@ -187,7 +369,6 @@ function LiveChat({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -298,7 +479,66 @@ function LiveChat({
   );
 }
 
-// ─── Main viewer page ─────────────────────────────────────────────────────────
+// ----------------------------------------------------------------------
+// Join-stage button (from first component)
+// ----------------------------------------------------------------------
+function JoinStageButton({
+  coStreamState,
+  onRequest,
+  onCancel,
+}: {
+  coStreamState: CoStreamState;
+  onRequest: () => void;
+  onCancel: () => void;
+}) {
+  if (coStreamState === "idle") {
+    return (
+      <button
+        onClick={onRequest}
+        className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 transition-colors text-white text-[10px] font-bold uppercase tracking-widest"
+      >
+        <UserPlus size={13} />
+        Request to Join
+      </button>
+    );
+  }
+
+  if (coStreamState === "pending") {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-4 py-2.5 border border-amber-500/50 text-amber-400 bg-amber-950/20 text-[10px] font-bold uppercase tracking-widest">
+          <Loader2 size={13} className="animate-spin" />
+          Waiting for artist...
+        </div>
+        <button
+          onClick={onCancel}
+          className="p-2.5 border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
+          title="Cancel request"
+        >
+          <X size={13} />
+        </button>
+      </div>
+    );
+  }
+
+  if (coStreamState === "rejected") {
+    return (
+      <button
+        onClick={onRequest}
+        className="flex items-center gap-2 px-4 py-2.5 border border-zinc-700 text-zinc-400 hover:border-indigo-500 hover:text-indigo-400 transition-colors text-[10px] font-bold uppercase tracking-widest"
+      >
+        <UserPlus size={13} />
+        Request Again
+      </button>
+    );
+  }
+
+  return null;
+}
+
+// ----------------------------------------------------------------------
+// Main viewer page (merged)
+// ----------------------------------------------------------------------
 export default function ViewerLivePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -320,48 +560,35 @@ export default function ViewerLivePage() {
     FloatingReaction[]
   >([]);
 
+  // Co‑streaming state
+  const [coStreamState, setCoStreamState] = useState<CoStreamState>("idle");
+  const [coStreamToken, setCoStreamToken] = useState<string | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCameraOff, setIsCameraOff] = useState(false);
+
   const socketRef = useRef<Socket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-  const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
-  // Get user info from your auth store
-  const getUserId = (): string | null => {
+  // Helper to get user info
+  const getViewerInfo = () => {
     try {
       const raw = localStorage.getItem("user");
-      if (!raw) return null;
+      if (!raw) return { displayName: "Guest", userId: null, avatar: null };
       const parsed = JSON.parse(raw);
-      return parsed?.id ?? parsed?.user_id ?? null;
+      return {
+        displayName: parsed?.name ?? parsed?.username ?? "Guest",
+        userId: parsed?.id ?? parsed?.user_id ?? null,
+        avatar: parsed?.avatar ?? null,
+      };
     } catch {
-      return null;
+      return { displayName: "Guest", userId: null, avatar: null };
     }
   };
 
-  const getDisplayName = (): string => {
-    try {
-      const raw = localStorage.getItem("user");
-      if (!raw) return "Guest";
-      const parsed = JSON.parse(raw);
-      return parsed?.name ?? parsed?.username ?? "Guest";
-    } catch {
-      return "Guest";
-    }
-  };
-
-  const getUserAvatar = (): string | null => {
-    try {
-      const raw = localStorage.getItem("user");
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return parsed?.avatar ?? parsed?.profile_image ?? null;
-    } catch {
-      return null;
-    }
-  };
-
-  // Spawn a floating reaction that auto-removes after animation
+  // Spawn a floating reaction
   const spawnFloatingReaction = useCallback((emoji: string) => {
     const id = `${Date.now()}_${Math.random()}`;
-    const x = 10 + Math.random() * 70; // random horizontal position
+    const x = 10 + Math.random() * 70;
     setFloatingReactions((prev) => [...prev, { id, emoji, x }]);
     setTimeout(() => {
       setFloatingReactions((prev) => prev.filter((r) => r.id !== id));
@@ -372,12 +599,13 @@ export default function ViewerLivePage() {
   const handleSendMessage = useCallback(
     (message: string) => {
       if (!socketRef.current || streamState !== "live") return;
+      const { displayName, userId, avatar } = getViewerInfo();
       socketRef.current.emit("chat-message", {
         exhibitionId: id,
         message,
-        displayName: getDisplayName(),
-        userId: getUserId(),
-        avatar: getUserAvatar(),
+        displayName,
+        userId,
+        avatar,
       });
     },
     [id, streamState],
@@ -396,7 +624,32 @@ export default function ViewerLivePage() {
     [id, streamState, spawnFloatingReaction],
   );
 
-  // Join live stream
+  // Co‑streaming actions
+  const handleRequestCoStream = useCallback(() => {
+    if (!socketRef.current) return;
+    const { displayName, userId, avatar } = getViewerInfo();
+    socketRef.current.emit("request-costream", {
+      exhibitionId: id,
+      userId,
+      displayName,
+      avatar,
+    });
+  }, [id]);
+
+  const handleCancelRequest = useCallback(() => {
+    socketRef.current?.emit("cancel-costream-request", { exhibitionId: id });
+    setCoStreamState("idle");
+  }, [id]);
+
+  const handleLeaveStage = useCallback(() => {
+    socketRef.current?.emit("remove-costreamer", { exhibitionId: id });
+    setCoStreamState("idle");
+    setCoStreamToken(null);
+    setIsMuted(false);
+    setIsCameraOff(false);
+  }, [id]);
+
+  // Join live stream (viewer)
   const handleJoinLive = useCallback(async () => {
     if (streamState !== "live" && streamState !== "interrupted") return;
     if (isJoining) return;
@@ -427,8 +680,8 @@ export default function ViewerLivePage() {
 
       socketRef.current?.emit("viewer-watching", {
         exhibitionId: id,
-        userId: getUserId(),
-        displayName: getDisplayName(),
+        userId: getViewerInfo().userId,
+        displayName: getViewerInfo().displayName,
       });
 
       toast.success("Joined live stream!");
@@ -566,6 +819,29 @@ export default function ViewerLivePage() {
       spawnFloatingReaction(reaction);
     });
 
+    // Co‑stream events
+    socket.on("costream-request-pending", () => setCoStreamState("pending"));
+    socket.on("costream-accepted", ({ token }: { token: string }) => {
+      setCoStreamToken(token);
+      setCoStreamState("accepted");
+      toast.success("You're on stage! Camera and mic are now live.");
+    });
+    socket.on("costream-request-rejected", ({ reason }: { reason: string }) => {
+      setCoStreamState("rejected");
+      toast.error(reason || "Your request was declined.");
+      setTimeout(() => setCoStreamState("idle"), 3000);
+    });
+    socket.on("costream-request-withdrawn", () => setCoStreamState("idle"));
+    socket.on("costream-removed", ({ reason }: { reason: string }) => {
+      setCoStreamToken(null);
+      setCoStreamState("idle");
+      toast.info(reason || "You have left the stage.");
+    });
+    socket.on("costream-error", ({ reason }: { reason: string }) => {
+      toast.error(reason);
+      setCoStreamState("idle");
+    });
+
     return () => {
       if (reconnectTimeoutRef.current)
         clearTimeout(reconnectTimeoutRef.current);
@@ -594,14 +870,12 @@ export default function ViewerLivePage() {
   const bannerImage = exhibition?.banner_image
     ? exhibition.banner_image.startsWith("http")
       ? exhibition.banner_image
-      : `${baseUrl}${exhibition.banner_image}`
+      : `${BASE_URL}${exhibition.banner_image}`
     : "https://via.placeholder.com/1280x720?text=Exhibition+Banner";
 
-  const showLiveKitRoom =
-    token && streamState === "live" && hasInteracted && !artistDisconnected;
-
+  const isCoStreamer = coStreamState === "accepted" && !!coStreamToken;
   const isStreamActive = streamState === "live" || streamState === "joining";
-  const displayName = getDisplayName();
+  const displayName = getViewerInfo().displayName;
 
   if (isLoading) {
     return (
@@ -644,6 +918,11 @@ export default function ViewerLivePage() {
           </button>
 
           <div className="flex items-center gap-3">
+            {isCoStreamer && (
+              <div className="flex items-center gap-2 px-3 py-1.5 border border-indigo-400 text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 text-[10px] font-bold uppercase tracking-widest animate-pulse">
+                <Crown size={12} /> On Stage
+              </div>
+            )}
             {streamState === "live" && (
               <div className="flex items-center gap-2 px-3 py-1.5 border border-red-500 text-red-500 bg-red-50 dark:bg-red-950/30 text-[10px] font-bold uppercase tracking-widest">
                 <span className="w-1.5 h-1.5 bg-red-500 animate-pulse rounded-full" />
@@ -690,9 +969,29 @@ export default function ViewerLivePage() {
             className="flex flex-col lg:flex-row gap-0 border border-slate-200 dark:border-slate-800 overflow-hidden"
             style={{ height: "560px" }}
           >
-            {/* Video */}
+            {/* Video area */}
             <div className="relative flex-1 bg-zinc-900 min-h-64 lg:min-h-0">
-              {showLiveKitRoom ? (
+              {isCoStreamer ? (
+                <LiveKitRoom
+                  token={coStreamToken!}
+                  serverUrl={LIVEKIT_URL}
+                  connect={true}
+                  video={!isCameraOff}
+                  audio={!isMuted}
+                  onDisconnected={() => {
+                    setCoStreamToken(null);
+                    setCoStreamState("idle");
+                  }}
+                >
+                  <CoStreamerView
+                    isMuted={isMuted}
+                    isCameraOff={isCameraOff}
+                    reactions={floatingReactions}
+                    onLeave={handleLeaveStage}
+                  />
+                  <RoomAudioRenderer />
+                </LiveKitRoom>
+              ) : token && streamState === "live" && hasInteracted ? (
                 <LiveKitRoom
                   token={token}
                   serverUrl={LIVEKIT_URL}
@@ -834,29 +1133,26 @@ export default function ViewerLivePage() {
                       </>
                     )}
                   </div>
-                  {/* Floating reactions even on overlay screen */}
                   <FloatingReactions reactions={floatingReactions} />
                 </>
               )}
             </div>
 
-            {/* Chat panel — always visible alongside video */}
-            {/* Chat panel — only show when stream is live */}
-            {(streamState === "live" || streamState === "joining") &&
-              hasInteracted && (
-                <div
-                  className="w-full lg:w-80 flex-shrink-0 flex flex-col"
-                  style={{ minHeight: "300px" }}
-                >
-                  <LiveChat
-                    messages={chatMessages}
-                    onSend={handleSendMessage}
-                    onReaction={handleSendReaction}
-                    displayName={displayName}
-                    isLive={isStreamActive && hasInteracted}
-                  />
-                </div>
-              )}
+            {/* Chat panel — only visible when stream is live and user has joined */}
+            {isStreamActive && hasInteracted && (
+              <div
+                className="w-full lg:w-80 flex-shrink-0 flex flex-col"
+                style={{ minHeight: "300px" }}
+              >
+                <LiveChat
+                  messages={chatMessages}
+                  onSend={handleSendMessage}
+                  onReaction={handleSendReaction}
+                  displayName={displayName}
+                  isLive={isStreamActive && hasInteracted}
+                />
+              </div>
+            )}
           </div>
 
           {/* Artist offline warning */}
@@ -876,6 +1172,49 @@ export default function ViewerLivePage() {
                   anything.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Controls row (co‑streamer controls + join button) */}
+          {streamState === "live" && hasInteracted && (
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2">
+                {isCoStreamer && (
+                  <>
+                    <button
+                      onClick={() => setIsMuted(!isMuted)}
+                      className={`p-3 border transition-all ${
+                        isMuted
+                          ? "border-red-200 dark:border-red-900 text-red-500 bg-red-50 dark:bg-red-950/30"
+                          : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400"
+                      }`}
+                    >
+                      {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+                    </button>
+                    <button
+                      onClick={() => setIsCameraOff(!isCameraOff)}
+                      className={`p-3 border transition-all ${
+                        isCameraOff
+                          ? "border-red-200 dark:border-red-900 text-red-500 bg-red-50 dark:bg-red-950/30"
+                          : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400"
+                      }`}
+                    >
+                      {isCameraOff ? (
+                        <VideoOff size={18} />
+                      ) : (
+                        <Video size={18} />
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+              {!isCoStreamer && (
+                <JoinStageButton
+                  coStreamState={coStreamState}
+                  onRequest={handleRequestCoStream}
+                  onCancel={handleCancelRequest}
+                />
+              )}
             </div>
           )}
 
@@ -946,7 +1285,7 @@ export default function ViewerLivePage() {
                         src={
                           art.main_image?.startsWith("http")
                             ? art.main_image
-                            : `${baseUrl}${art.main_image}`
+                            : `${BASE_URL}${art.main_image}`
                         }
                         alt={art.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
