@@ -22,9 +22,11 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401) {
-      // Unauthorized: Clear session and redirect to login
+      // Clear session
       localStorage.removeItem("token");
       localStorage.removeItem("user_data");
+      // Notify any listeners (AuthProvider) that the token is invalid
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     } else if (status === 403) {
       toast.error("Forbidden", {
         description: "You don't have permission for this.",

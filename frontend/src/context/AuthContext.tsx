@@ -1,4 +1,3 @@
-// src/context/AuthContext.tsx
 import {
   createContext,
   useContext,
@@ -33,11 +32,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // A ref persists across renders and doesn't trigger re-renders
   const isFetching = useRef(false);
 
   const refreshUser = useCallback(async () => {
-    // Prevent multiple concurrent calls
     if (isFetching.current) return;
 
     const token = localStorage.getItem("token");
@@ -54,8 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(data);
       setIsAuthenticated(true);
     } catch (err) {
-      // Don't log 401s as scary errors if it's just an expired session
-      AuthService.logout();
+      AuthService.logout(); // clears token and user_data
       setUser(null);
       setIsAuthenticated(false);
     } finally {
@@ -66,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     refreshUser();
-  }, []); // Empty dependency array is fine here since refreshUser is stable
+  }, [refreshUser]);
 
   const logout = useCallback(() => {
     AuthService.logout();
@@ -74,7 +70,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsAuthenticated(false);
   }, []);
 
-  // Memoize the context value to prevent unnecessary re-renders
+  // Listen for token invalidation events from axios interceptor
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      // Only act if we currently think we're authenticated
+      if (isAuthenticated) {
+        logout();
+      }
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () =>
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, [isAuthenticated, logout]);
+
   const contextValue = useMemo(
     () => ({
       user,
