@@ -136,8 +136,6 @@ export default function ArtistShipmentsPage() {
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto space-y-6 md:space-y-8 bg-transparent">
-      <Toaster richColors theme="dark" position="top-right" />
-
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 dark:border-white/10 pb-6">
         <div>

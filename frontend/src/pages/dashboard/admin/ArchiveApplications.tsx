@@ -110,8 +110,6 @@ export default function AdminArchiveApplicationsPage() {
 
   return (
     <div className="min-h-screen p-8 max-w-7xl mx-auto space-y-6 bg-transparent transition-colors duration-300">
-      <Toaster richColors theme="dark" />
-
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-200 dark:border-white/10 pb-8">
         <div>

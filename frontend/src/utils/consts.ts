@@ -14,6 +14,8 @@ import {
   Archive,
   Receipt,
   ListCollapse,
+  Truck,
+  FileText,
 } from "lucide-react";
 
 export const NAVIGATION_CONFIG = [
@@ -55,6 +57,14 @@ export const NAVIGATION_CONFIG = [
         path: "/dashboard/artworks/new",
         roles: ["AUTHOR"],
         variant: "outline",
+      },
+
+      {
+        id: "shipments",
+        label: "Shipments",
+        icon: Truck,
+        path: "/dashboard/shipments",
+        roles: ["AUTHOR"],
       },
     ],
   },
@@ -112,7 +122,7 @@ export const NAVIGATION_CONFIG = [
       {
         id: "archive-application",
         label: "Archive applications",
-        icon: UserCheck,
+        icon: FileText,
         path: "/dashboard/archive-applications",
         roles: ["ADMIN"],
       },
