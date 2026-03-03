@@ -1,6 +1,13 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const notificationEmitter = require("../../../events/EventEmitter");
-const { Order, OrderItem, Artwork, User, sequelize } = require("../../index");
+const {
+  Order,
+  OrderItem,
+  Artwork,
+  User,
+  Shipment,
+  sequelize,
+} = require("../../index");
 const { Op } = require("sequelize");
 // Creating an order
 exports.createOrder = async (req, res) => {
@@ -148,6 +155,11 @@ exports.getAllOrders = async (req, res) => {
             },
           ],
         },
+        {
+          model: Shipment,
+          as: "shipment", // include shipment details
+          required: false, // left join – orders may not have a shipment yet
+        },
       ],
     });
 
@@ -177,6 +189,11 @@ exports.getAllOrdersByAdmin = async (req, res) => {
           model: User,
           as: "buyer",
           attributes: ["name", "email"],
+        },
+        {
+          model: Shipment,
+          as: "shipment",
+          required: false,
         },
       ],
     });

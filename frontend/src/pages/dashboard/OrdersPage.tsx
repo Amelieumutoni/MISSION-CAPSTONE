@@ -11,6 +11,8 @@ import {
   DollarSign,
   Terminal,
   ReceiptText,
+  Truck,
+  MapPin,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
@@ -51,7 +53,9 @@ export default function AdminOrdersPage() {
     return (
       order.order_id.toString().includes(search) ||
       order.buyer.name.toLowerCase().includes(search) ||
-      order.buyer.email.toLowerCase().includes(search)
+      order.buyer.email.toLowerCase().includes(search) ||
+      order.shipment?.tracking_number?.toLowerCase().includes(search) ||
+      order.shipment?.carrier?.toLowerCase().includes(search)
     );
   });
 
@@ -71,20 +75,20 @@ export default function AdminOrdersPage() {
     <div className="min-h-screen p-8 max-w-7xl mx-auto space-y-8 bg-transparent transition-colors duration-300">
       <Toaster richColors theme="dark" />
 
-      {/* 1. ARCHITECTURAL HEADER */}
+      {/* 1. HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-200 dark:border-white/10 pb-8">
         <div>
           <h1 className="text-3xl font-sans uppercase tracking-tighter flex items-center gap-3 text-slate-900 dark:text-white">
             Order Ledger
           </h1>
           <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-2">
-            Transaction analysis
+            Transaction & Fulfillment Overview
           </p>
         </div>
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="search by email / name..."
+            placeholder="search by email / name / tracking..."
             className="pl-10 rounded-none border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 text-[11px] font-sans focus-visible:ring-0 focus-visible:border-slate-900 dark:focus-visible:border-white h-11"
             value={searchTerm}
             onChange={(e) => {
@@ -95,8 +99,8 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* 2. TRANSACTION SUMMARY GRID */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6  gap-[1px]">
+      {/* 2. SUMMARY GRID */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <OrderStatBox
           label="Volume"
           value={orders.length}
@@ -120,7 +124,7 @@ export default function AdminOrdersPage() {
         />
       </div>
 
-      {/* 3. CORE TABLE LEDGER */}
+      {/* 3. TABLE */}
       <div className="border border-slate-200 dark:border-white/10 rounded-none overflow-hidden bg-transparent backdrop-blur-[2px]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -131,6 +135,8 @@ export default function AdminOrdersPage() {
                   "Collector",
                   "Value",
                   "Status",
+                  "Shipment", // new column
+                  "Tracking", // new column
                   "Timestamp",
                   "",
                 ].map((h) => (
@@ -147,7 +153,7 @@ export default function AdminOrdersPage() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={8}
                     className="px-6 py-20 text-center text-slate-400 dark:text-slate-600 animate-pulse font-mono text-xs uppercase tracking-tighter"
                   >
                     Fetching_Transaction_Data...
@@ -176,6 +182,26 @@ export default function AdminOrdersPage() {
                     <td className="px-6 py-4">
                       <OrderStatusBadge status={order.status} />
                     </td>
+                    <td className="px-6 py-4">
+                      {order.shipment ? (
+                        <ShipmentStatusBadge status={order.shipment.status} />
+                      ) : (
+                        <span className="text-slate-300 dark:text-slate-600 text-[9px]">
+                          —
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {order.shipment?.tracking_number ? (
+                        <span className="text-[10px] font-mono text-slate-600 dark:text-slate-400">
+                          {order.shipment.tracking_number}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300 dark:text-slate-600 text-[9px]">
+                          —
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-[10px] font-mono text-slate-400 uppercase">
                       {order.created_at
                         ? format(new Date(order.created_at), "dd.MM.yyyy")
@@ -197,7 +223,7 @@ export default function AdminOrdersPage() {
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={8}
                     className="px-6 py-20 text-center font-mono text-[10px] text-slate-400 uppercase italic"
                   >
                     ZERO_TRANSACTIONS_LOGGED
@@ -209,7 +235,7 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* 4. FOOTER / PAGINATION */}
+      {/* 4. PAGINATION */}
       {!loading && (
         <div className="flex items-center justify-between px-1 pt-4">
           <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500">
@@ -241,7 +267,7 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* 5. SIDE DETAIL DRAWER */}
+      {/* 5. DETAIL DRAWER */}
       <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <SheetContent className="bg-white dark:bg-zinc-950 border-l border-slate-200 dark:border-white/10 rounded-none w-full sm:max-w-md p-0">
           <div className="h-full flex flex-col">
@@ -258,6 +284,7 @@ export default function AdminOrdersPage() {
             </SheetHeader>
 
             <div className="flex-1 p-8 space-y-8 overflow-y-auto">
+              {/* Client Info */}
               <section className="space-y-4">
                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                   Client_Identity
@@ -268,6 +295,7 @@ export default function AdminOrdersPage() {
                 </div>
               </section>
 
+              {/* Fiscal Summary */}
               <section className="space-y-4">
                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                   Fiscal_Summary
@@ -296,6 +324,51 @@ export default function AdminOrdersPage() {
                   />
                 </div>
               </section>
+
+              {/* Shipment Details (if available) */}
+              {selectedOrder?.shipment && (
+                <section className="space-y-4">
+                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    Fulfillment_Details
+                  </h4>
+                  <div className="space-y-px bg-zinc-100 dark:bg-white/5 border border-zinc-100 dark:border-white/5">
+                    <DetailRow
+                      label="Carrier"
+                      value={selectedOrder.shipment.carrier || "—"}
+                    />
+                    <DetailRow
+                      label="Tracking"
+                      value={selectedOrder.shipment.tracking_number || "—"}
+                    />
+                    <DetailRow
+                      label="Shipment_Status"
+                      value={
+                        <ShipmentStatusBadge
+                          status={selectedOrder.shipment.status}
+                        />
+                      }
+                    />
+                    {selectedOrder.shipment.shipped_at && (
+                      <DetailRow
+                        label="Shipped_At"
+                        value={format(
+                          new Date(selectedOrder.shipment.shipped_at),
+                          "dd.MM.yyyy",
+                        )}
+                      />
+                    )}
+                    {selectedOrder.shipment.delivered_at && (
+                      <DetailRow
+                        label="Delivered_At"
+                        value={format(
+                          new Date(selectedOrder.shipment.delivered_at),
+                          "dd.MM.yyyy",
+                        )}
+                      />
+                    )}
+                  </div>
+                </section>
+              )}
             </div>
 
             <div className="p-8 bg-slate-50 dark:bg-white/[0.02] border-t border-slate-200 dark:border-white/10">
@@ -313,7 +386,8 @@ export default function AdminOrdersPage() {
   );
 }
 
-// Sub-components
+// ===== Helper Components =====
+
 function OrderStatBox({
   label,
   value,
@@ -347,6 +421,29 @@ function OrderStatusBadge({ status }: { status: string }) {
   if (s === "PENDING")
     style =
       "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-500";
+
+  return (
+    <span
+      className={`inline-block px-2 py-0.5 text-[9px] font-black font-mono uppercase border rounded-none tracking-tighter ${style}`}
+    >
+      {status}
+    </span>
+  );
+}
+
+function ShipmentStatusBadge({ status }: { status: string }) {
+  const s = status?.toUpperCase();
+  let style = "border-slate-200 dark:border-white/10 text-slate-400";
+
+  if (s === "PENDING")
+    style =
+      "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-500";
+  if (s === "SHIPPED")
+    style =
+      "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400";
+  if (s === "DELIVERED")
+    style =
+      "bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400";
 
   return (
     <span

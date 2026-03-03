@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { OrderService } from "@/api/services/orderService";
 import NotificationService from "@/api/services/notificationSerivce";
+import { confirmDelivery } from "@/api/services/shipmentService"; // 👈 import shipment service
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,8 @@ import {
   MailOpen,
   AlertTriangle,
   ArrowRight,
+  Truck,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BuyerProfileSection from "@/components/dashboard/buyer/UpdateProfile";
@@ -81,6 +84,18 @@ export default function BuyerDashboard() {
     }
   };
 
+  // Shipment confirmation handler
+  const handleConfirmDelivery = async (orderId) => {
+    try {
+      await confirmDelivery(orderId);
+      toast.success("Delivery confirmed. Thank you!");
+      const updatedOrders = await OrderService.getUserOrders();
+      setOrders(updatedOrders);
+    } catch (err) {
+      toast.error("Failed to confirm delivery. Please try again.");
+    }
+  };
+
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const navItems = [
@@ -102,14 +117,14 @@ export default function BuyerDashboard() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      {/* --- SIDE NAVIGATION --- */}
+      {/* --- SIDE NAVIGATION (unchanged) --- */}
       <aside className="w-64 border-r border-slate-100 hidden md:flex flex-col sticky top-0 h-screen">
+        {/* ... same as before ... */}
         <div className="p-8 border-b border-slate-50">
           <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-400">
             Buyer Portal
           </p>
         </div>
-
         <nav className="flex-1 px-4 py-8 space-y-2">
           {navItems.map((item) => (
             <button
@@ -121,12 +136,18 @@ export default function BuyerDashboard() {
                   : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              {item.icon}
-              {item.label}
+              <span className="flex items-center gap-3">
+                {item.icon}
+                {item.label}
+              </span>
+              {item.count > 0 && (
+                <span className="bg-rose-500 text-white text-[8px] px-1.5 py-0.5 rounded-full">
+                  {item.count}
+                </span>
+              )}
             </button>
           ))}
         </nav>
-
         <div className="p-4 border-t border-slate-50">
           <button
             onClick={handleLogout}
@@ -141,7 +162,7 @@ export default function BuyerDashboard() {
       {/* --- MAIN CONTENT AREA --- */}
       <main className="flex-1 p-8 lg:p-12 overflow-y-auto text-slate-900">
         <div className="max-w-5xl mx-auto space-y-10">
-          {/* COLLECTIONS SECTION */}
+          {/* COLLECTIONS SECTION with shipment details */}
           {activeSection === "orders" && (
             <>
               <header className="flex flex-col gap-2">
@@ -149,7 +170,7 @@ export default function BuyerDashboard() {
                   My Collections
                 </h1>
                 <p className="text-slate-500 font-sans tracking-wide">
-                  Manage your orders and art acquisitions.
+                  Manage your orders and track shipments.
                 </p>
               </header>
 
@@ -190,42 +211,90 @@ export default function BuyerDashboard() {
                             <th className="px-6 py-4">Order ID</th>
                             <th className="px-6 py-4">Artworks</th>
                             <th className="px-6 py-4">Total</th>
-                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4">Order Status</th>
+                            <th className="px-6 py-4">Shipment Status</th>
+                            <th className="px-6 py-4">Tracking</th>
                             <th className="px-6 py-4">Date</th>
+                            <th className="px-6 py-4"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                          {orders.map((order) => (
-                            <tr
-                              key={order.order_id}
-                              className="hover:bg-slate-50/50 transition-colors"
-                            >
-                              <td className="px-6 py-4 font-mono text-xs">
-                                #{order.order_id}
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="flex -space-x-3">
-                                  {order.items?.map((item, i) => (
-                                    <img
-                                      key={i}
-                                      src={"/image" + item.artwork.main_image}
-                                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                                      title={item.artwork.title}
+                          {orders.map((order) => {
+                            const shipment = order.shipment; // assuming shipment relation exists
+                            return (
+                              <tr
+                                key={order.order_id}
+                                className="hover:bg-slate-50/50 transition-colors"
+                              >
+                                <td className="px-6 py-4 font-mono text-xs">
+                                  #{order.order_id}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex -space-x-3">
+                                    {order.items?.map((item, i) => (
+                                      <img
+                                        key={i}
+                                        src={"/image" + item.artwork.main_image}
+                                        className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                                        title={item.artwork.title}
+                                      />
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 font-bold text-slate-700">
+                                  ${order.total_price}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <OrderStatusBadge status={order.status} />
+                                </td>
+                                <td className="px-6 py-4">
+                                  {shipment ? (
+                                    <ShipmentStatusBadge
+                                      status={shipment.status}
                                     />
-                                  ))}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 font-bold text-slate-700">
-                                ${order.total_price}
-                              </td>
-                              <td className="px-6 py-4">
-                                <StatusBadge status={order.status} />
-                              </td>
-                              <td className="px-6 py-4 text-xs text-slate-500">
-                                {new Date(order.createdAt).toLocaleDateString()}
-                              </td>
-                            </tr>
-                          ))}
+                                  ) : (
+                                    <span className="text-slate-300 text-[10px]">
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4">
+                                  {shipment?.tracking_number ? (
+                                    <p
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-blue-600 underline underline-offset-2"
+                                    >
+                                      {shipment.tracking_number}
+                                    </p>
+                                  ) : (
+                                    <span className="text-slate-300 text-[10px]">
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-xs text-slate-500">
+                                  {new Date(
+                                    order.createdAt,
+                                  ).toLocaleDateString()}
+                                </td>
+                                <td className="px-6 py-4">
+                                  {shipment?.status === "SHIPPED" && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() =>
+                                        handleConfirmDelivery(order.order_id)
+                                      }
+                                      className="rounded-none border-slate-200 text-[9px] font-mono uppercase h-7 px-2"
+                                    >
+                                      Confirm Delivery
+                                    </Button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     )}
@@ -235,9 +304,10 @@ export default function BuyerDashboard() {
             </>
           )}
 
-          {/* NOTIFICATIONS SECTION */}
+          {/* NOTIFICATIONS SECTION (unchanged) */}
           {activeSection === "notifications" && (
             <div className="space-y-8">
+              {/* ... same as before ... */}
               <header className="flex justify-between items-end">
                 <div>
                   <h1 className="text-4xl font-serif font-bold text-slate-900">
@@ -332,6 +402,7 @@ export default function BuyerDashboard() {
   );
 }
 
+// ----- Helper Components -----
 function StatCard({ icon, title, value }) {
   return (
     <Card className="rounded-none border-slate-200">
@@ -350,14 +421,34 @@ function StatCard({ icon, title, value }) {
   );
 }
 
-function StatusBadge({ status }) {
+function OrderStatusBadge({ status }) {
   const styles = {
     PENDING: "bg-amber-100 text-amber-700 border-amber-200",
     PAID: "bg-emerald-100 text-emerald-700 border-emerald-200",
     FAILED: "bg-rose-100 text-rose-700 border-rose-200",
+    CANCELLED: "bg-slate-100 text-slate-600 border-slate-200",
   };
   return (
-    <Badge variant="outline" className={`rounded-none px-3 ${styles[status]}`}>
+    <Badge
+      variant="outline"
+      className={`rounded-none px-3 ${styles[status] || "bg-slate-100 text-slate-600"}`}
+    >
+      {status}
+    </Badge>
+  );
+}
+
+function ShipmentStatusBadge({ status }) {
+  const styles = {
+    PENDING: "bg-amber-100 text-amber-700 border-amber-200",
+    SHIPPED: "bg-blue-100 text-blue-700 border-blue-200",
+    DELIVERED: "bg-green-100 text-green-700 border-green-200",
+  };
+  return (
+    <Badge
+      variant="outline"
+      className={`rounded-none px-3 ${styles[status] || "bg-slate-100 text-slate-600"}`}
+    >
       {status}
     </Badge>
   );

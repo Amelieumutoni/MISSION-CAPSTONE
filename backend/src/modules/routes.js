@@ -10,6 +10,8 @@ const OrdersRoute = require("../modules/commerce/routes/OrdersRoute");
 const WebhookRoute = require("../modules/commerce/routes/WebhookRoute");
 const LiveStreamRoute = require("../modules/exhibition/routes/LiveStream");
 const NotificationRoute = require("../modules/notifications/routes/NotificationsRoute");
+const ShippingRoute = require("./commerce/routes/ShipmentRoute");
+const archiveRoutes = require("./applications/routes/ApplicationRoute");
 
 app.use("/auth", AuthRouter);
 app.use("/artworks", ArtworksRouter);
@@ -18,5 +20,7 @@ app.use("/artists", ArtRoute);
 app.use("/orders", OrdersRoute);
 app.use("/livekit", LiveStreamRoute);
 app.use("/notifications", NotificationRoute);
+app.use("/shipments", ShippingRoute);
+app.use("/archive", archiveRoutes);
 
 module.exports = app;

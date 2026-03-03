@@ -120,7 +120,6 @@ export default function ArtworkDetailPage() {
               {work.description}
             </p>
           </div>
-
           <div className="space-y-0 border-t border-slate-200">
             <DetailRow
               label="Classification ID"
@@ -145,16 +144,17 @@ export default function ArtworkDetailPage() {
             />
             <DetailRow label="Status" value={work.status} />
           </div>
-
           <div className="mt-12 flex gap-4">
-            <button className="flex-1 bg-slate-900 text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-black transition-all">
+            <Link
+              to="/archive/apply"
+              className="flex-1 bg-slate-900 text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-black transition-all text-center"
+            >
               Request Archival Access
-            </button>
+            </Link>
             <button className="w-20 border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors">
               <Share2 className="w-4 h-4" />
             </button>
           </div>
-
           <div className="mt-8 flex items-start gap-4 p-6 bg-slate-50/50 border border-slate-100">
             <Info className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
             <p className="text-[10px] text-slate-500 leading-relaxed uppercase tracking-widest font-bold">

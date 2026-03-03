@@ -43,6 +43,9 @@ import AdminExhibitionDetailPage from "./pages/dashboard/admin/ExhibitionManagem
 import AdminArchivedContentPage from "./pages/dashboard/admin/ArchivesPage";
 import ClassificationDetailPage from "./pages/ExhibitionDetails";
 import NotificationsSection from "./pages/dashboard/NotificationsPage";
+import ArtistShipmentsPage from "./pages/dashboard/ShipmentPage";
+import ArchiveApplicationPage from "./pages/ArchivesApplicationPage";
+import AdminArchiveApplicationsPage from "./pages/dashboard/admin/ArchiveApplications";
 
 function DashboardIndex() {
   const { user } = useAuth();
@@ -77,7 +80,10 @@ export default function App() {
                 path="/exhibitions/:id"
                 element={<ClassificationDetailPage />}
               />
-
+              <Route
+                path="/archive/apply"
+                element={<ArchiveApplicationPage />}
+              />
               <Route path="/archives" element={<ArtworksPage />} />
               <Route path="/archives/:id" element={<ArtworkDetailPage />} />
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
@@ -113,6 +119,10 @@ export default function App() {
                   element={<AdminExhibitionDetailPage />}
                 />
                 <Route path="archives" element={<AdminArchivedContentPage />} />
+                <Route
+                  path="archive-applications"
+                  element={<AdminArchiveApplicationsPage />}
+                />
               </Route>
             </Route>
 
@@ -124,6 +134,8 @@ export default function App() {
                 <Route path="exhibitions" element={<ExhibitionManagement />} />
                 <Route path="exhibitions/new" element={<NewExhibition />} />
                 <Route path="exhibitions/:id" element={<ExhibitionDetail />} />
+                <Route path="shipments" element={<ArtistShipmentsPage />} />
+
                 <Route
                   path="exhibitions/edit/:id"
                   element={<ExhibitionEdit />}

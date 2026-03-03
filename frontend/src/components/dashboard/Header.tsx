@@ -257,7 +257,7 @@ export function Header({ darkMode, setDarkMode }: any) {
 
           {user?.role === "ADMIN" && (
             <Button
-              onClick={() => navigate("/dashboard/admin/approvals")}
+              onClick={() => navigate("/dashboard/archive-applications")}
               className="rounded-none bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-[0.98] transition-all duration-300 font-sans font-bold uppercase tracking-[0.2em] text-[10px] px-6 h-10 border-none ml-2"
             >
               <ArrowRight size={14} className="mr-2 stroke-[3px]" />

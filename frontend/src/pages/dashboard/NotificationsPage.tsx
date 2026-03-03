@@ -156,12 +156,6 @@ export default function NotificationsSection() {
                     >
                       {notif.title}
                     </h3>
-                    <span className="text-[9px] font-mono text-slate-300 dark:text-slate-700">
-                      {new Date(notif.created_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
                   </div>
                   <p className="text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed font-serif">
                     {notif.message}

@@ -1,6 +1,12 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const notificationEmitter = require("../../../events/EventEmitter");
-const { Order, Artwork, OrderItem, sequelize } = require("../../index");
+const {
+  Order,
+  Artwork,
+  OrderItem,
+  Shipment,
+  sequelize,
+} = require("../../index");
 
 exports.handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
@@ -51,10 +57,13 @@ async function handleSuccessfulPayment(session) {
       return;
     }
 
-    // Decrement stock and mark SOLD only on successful payment
+    let artistId = null;
+
     for (const item of order.items) {
       const artwork = await Artwork.findByPk(item.artwork_id, { transaction });
       if (!artwork) continue;
+
+      if (!artistId) artistId = artwork.author_id;
 
       const newStock = artwork.stock_quantity - item.quantity;
       const isOutOfStock = newStock <= 0;
@@ -69,7 +78,7 @@ async function handleSuccessfulPayment(session) {
 
       notificationEmitter.emit("sendNotification", {
         recipient_id: artwork.author_id,
-        actor_id: order.buyer_id, // The Buyer who paid
+        actor_id: order.buyer_id,
         type: "artwork_sold",
         title: "Artwork Sold!",
         message: `Great news! "${artwork.title}" has been purchased. You have earned $${item.price_at_purchase * item.quantity}.`,
@@ -82,10 +91,9 @@ async function handleSuccessfulPayment(session) {
       if (isOutOfStock) {
         notificationEmitter.emit("sendNotification", {
           recipient_id: artwork.author_id,
-          actor_id: null, // System generated
           type: "artwork_out_of_stock",
           title: "Stock Alert: Sold Out",
-          message: `"${artwork.title}" is now out of stock and has been marked as SOLD in the gallery.`,
+          message: `"${artwork.title}" is now out of stock.`,
           entity_type: "artwork",
           entity_id: artwork.artwork_id,
           priority: "urgent",
@@ -93,22 +101,45 @@ async function handleSuccessfulPayment(session) {
       }
     }
 
+    await Shipment.create(
+      {
+        order_id: orderId,
+        status: "PENDING",
+      },
+      { transaction },
+    );
+
     await order.update({ status: "PAID" }, { transaction });
+
     await transaction.commit();
+
+    if (artistId) {
+      notificationEmitter.emit("sendNotification", {
+        recipient_id: artistId,
+        type: "order_paid",
+        title: "New Shipment Pending 📦",
+        message: `Order #${orderId} is ready to be shipped. Please provide tracking info in your dashboard.`,
+        entity_type: "order",
+        entity_id: orderId,
+        priority: "high",
+        link: `/dashboard/orders/${orderId}`,
+      });
+    }
 
     notificationEmitter.emit("sendNotification", {
       recipient_id: order.buyer_id,
-      actor_id: null,
       type: "order_paid",
       title: "Payment Confirmed",
-      message: `Thank you! Your payment for Order #${orderId} was successful. The artist has been notified to prepare your items.`,
+      message: `Thank you! Your payment for Order #${orderId} was successful. The artist has been notified to ship your items.`,
       entity_type: "order",
       entity_id: orderId,
       priority: "high",
+      link: `/account/orders/${orderId}`,
     });
-    console.log(`Order ${orderId} paid — stock updated.`);
+
+    console.log(`Order ${orderId} paid — stock updated and shipment created.`);
   } catch (error) {
-    await transaction.rollback();
+    if (transaction) await transaction.rollback();
     console.error(`Webhook success error: ${error.message}`);
   }
 }

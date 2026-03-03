@@ -40,6 +40,9 @@ const Order = sequelize.define(
 
 Order.associate = (models) => {
   Order.belongsTo(models.User, { foreignKey: "buyer_id", as: "buyer" });
+  if (models.Shipment) {
+    Order.hasOne(models.Shipment, { foreignKey: "order_id", as: "shipment" });
+  }
   if (models.OrderItem) {
     Order.hasMany(models.OrderItem, { foreignKey: "order_id", as: "items" });
   }

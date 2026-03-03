@@ -110,12 +110,11 @@ export const NAVIGATION_CONFIG = [
         roles: ["ADMIN"],
       },
       {
-        id: "artist-approval",
-        label: "Pending Approvals",
+        id: "archive-application",
+        label: "Archive applications",
         icon: UserCheck,
-        path: "/dashboard/admin/approvals",
+        path: "/dashboard/archive-applications",
         roles: ["ADMIN"],
-        badge: "pending",
       },
       {
         id: "all-users",
