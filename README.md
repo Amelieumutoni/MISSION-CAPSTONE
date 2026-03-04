@@ -1,81 +1,206 @@
 # Craftfolio
 
-## Description
-CraftTFOLIO is a web-based platform that allows Rwandan designers and artisans to digitally document, showcase, and sell their creative works. 
-The platform aims to provide visibility, easy curation, and direct market connectivity for local creators. 
-Users can create profiles, upload their works, and manage their online portfolio.
+A web-based platform that allows Rwandan designers and artisans to digitally document, showcase, and sell their creative works. Craftfolio provides visibility, easy curation, and direct market connectivity for local creators. Users can create profiles, upload their works, manage their online portfolio, and participate in live exhibitions with real-time streaming.
 
-## Link to the GitHub repo
-https://github.com/Amelieumutoni/MISSION-CAPSTONE.git
+---
 
-## link to the video
-https://drive.google.com/file/d/19s0CIDRpOvVHkvTgZ9d41xKGJQMh0EHT/view?usp=sharing
+## Table of Contents
 
-## Getting Started
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Installation & Setup](#installation--setup)
+- [Running the Application](#running-the-application)
+- [Environment Variables](#environment-variables)
+- [API Documentation](#api-documentation)
+- [Designs](#designs)
+- [Deployment Plan](#deployment-plan)
+- [Links](#links)
 
-1. **Clone the repository**
-```bash
+---
 
-git clone https://github.com/Amelieumutoni/MISSION-CAPSTONE.git
+## Features
 
-## Prerequisites
+- **User roles:** Admin, Author (artist), and Buyer
+- **Authentication:** JWT-based auth with bcrypt password hashing
+- **Artwork management:** Upload, curate, and showcase creative works
+- **Exhibitions:** Create and manage exhibitions with live streaming (LiveKit)
+- **Real-time updates:** Socket.io for notifications and exhibition events
+- **Payments:** Stripe integration for checkout and webhooks
+- **Dashboard:** Analytics, orders, and content management
+- **Archive applications:** Submit and manage archive requests
 
-- Node.js (v18 or later)
-- npm
+---
 
-### Installation
+## Tech Stack
 
-cd mission-capstone-1
+### Frontend
 
-Install dependencies
+| Technology | Purpose |
+|------------|---------|
+| React 19 | UI framework |
+| TypeScript | Type safety |
+| Vite 7 | Build tool & dev server |
+| Tailwind CSS 4 | Styling |
+| shadcn/ui | Component library (Radix UI) |
+| React Router 7 | Client-side routing |
+| Axios | HTTP client |
+| Socket.io-client | Real-time events |
+| LiveKit + PeerJS | Live streaming |
+| Recharts | Charts & analytics |
+| date-fns | Date utilities |
+| Sonner | Toast notifications |
 
-npm install
+### Backend
 
-Run the project
+| Technology | Purpose |
+|------------|---------|
+| Node.js | Runtime |
+| Express 5 | Web framework |
+| Sequelize | ORM |
+| PostgreSQL | Database |
+| JWT + bcrypt | Authentication |
+| Socket.io | Real-time events |
+| Multer | File uploads |
+| Stripe | Payments & webhooks |
+| LiveKit Server SDK | Live streaming |
+| Swagger | API documentation |
+| node-cron | Scheduled jobs |
+| Helmet & CORS | Security |
 
-npm start
-
-Open in browser
-
-Visit http://localhost:3000 to view the app.
+---
 
 ## Project Structure
 
 ```
-craftfolio/
-├── src/
-│   ├── components/    # Reusable UI components
-│   ├── Pages/         # Page components
-│   ├── App.jsx
-│   └── main.jsx
-├── public/
-└── index.html
+MISSION-CAPSTONE/
+├── frontend/                    # React + Vite SPA
+│   ├── src/
+│   │   ├── api/                 # API services & endpoints
+│   │   ├── components/          # UI (layout, dashboard, ui)
+│   │   ├── context/             # Auth & Cart state
+│   │   ├── hooks/               # useAuth, useNotifications
+│   │   ├── pages/               # Route pages
+│   │   ├── lib/                 # Utilities
+│   │   └── types/               # TypeScript types
+│   ├── package.json
+│   └── vite.config.ts
+├── backend/                     # Express API
+│   ├── src/
+│   │   ├── jobs/                # Cron jobs
+│   │   ├── modules/             # Features (auth, artwork, commerce, etc.)
+│   │   └── utils/               # Database, middleware, swagger
+│   ├── uploads/                 # Static uploads
+│   ├── main.js
+│   └── package.json
+└── README.md
+```
 
 
-## DESIGNS
-the following is the link of design created in Figma 
-https://www.figma.com/proto/2kxvAftKtQrBbufLmn9Zpl/MISSION-CAPSTONE-PROJECT-DESIGN?node-id=0-1&t=RhZiwIwuHV7TBq4I-1
 
-## Deployment Plan
-The project will be deployed usingdeployed on Firebase using the following services:
+---
+
+## Prerequisites
+
+- **Node.js** (v18 or later) - https://nodejs.org/
+- **npm** (comes with Node.js)
+- **PostgreSQL** - https://www.postgresql.org/download/
+- **Git** - https://git-scm.com/
+
+---
+
+## Installation & Setup
+
+### Step 1: Clone the repository
+
+git clone https://github.com/Amelieumutoni/MISSION-CAPSTONE.git
+cd MISSION-CAPSTONE
+
+### Step 2: Create the PostgreSQL database
+- psql -U postgres
+- CREATE DATABASE artdoc_db;
+\q
+### Step 3: Backend setup
+cd backend
+npm install
+
+###Step 4: Create backend .env file
+PORT=5000
+DB_USER=postgres
+DB_HOST=localhost
+DB_NAME=artdoc_db
+DB_PASSWORD=your_postgres_password
+DB_PORT=5432
+DB_DIALECT=postgres
+JWT_SECRET=your_super_secret_jwt_key
+JWT_EXPIRES_IN=1h
+STRIPE_SECRET_KEY=sk_test_your_stripe_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+FRONTEND_URL=https://localhost:5173
+LIVEKIT_URL=wss://your-livekit-url.livekit.cloud
+LIVEKIT_API_KEY=your_key
+LIVEKIT_API_SECRET=your_secret
+
+### Step 5: Run database migrations
+npx sequelize-cli db:migrate
+### Step 6: Frontend setup
+Open a new terminal:
+- cd MISSION-CAPSTONE
+- cd frontend
+- npm install
+
+### Step 7: Create frontend .env file
+Create frontend/.env with:
+BACKEND_URL=/api
+BACKEND_IMAGE_URL=/image
+VITE_SOCKET_URL=/socket.io
+VITE_LIVEKIT_URL=wss://your-livekit-url.livekit.cloud
+
+### Running the Application
+
+**Terminal 1 - Backend:**
+```bash
+cd MISSION-CAPSTONE/backend
+npm run dev
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd MISSION-CAPSTONE/frontend
+npm run dev
+```
+
+- **App:** https://localhost:5173
+- **API docs:** http://localhost:5000/api-docs
+
+---
+
+## Deployment Plan (Vercel)
+
+This project uses **Vercel** and **render** for deployment.
+
+**Frontend:** [Vercel](https://vercel.com) · **Backend + DB:** [Render](https://render.com)
+
+### Render (Backend)
+
+1. Create **PostgreSQL** database → copy Internal URL.
+2. Create **Web Service** → connect GitHub, set Root Directory: `backend`.
+3. Build: `npm install && npx sequelize-cli db:migrate --env production` · Start: `node main.js`
+4. Add env vars: `DB_*`, `JWT_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `FRONTEND_URL`, `LIVEKIT_*` (use values from DB URL).
+5. Stripe webhook: Add endpoint `https://your-backend.onrender.com/api/webhooks/stripe` → copy signing secret to `STRIPE_WEBHOOK_SECRET`.
+
+### Vercel (Frontend)
+
+1. **Add New** → **Project** → import GitHub repo.
+2. Root Directory: `frontend` · Framework: Vite · Build: `npm run build` · Output: `dist`
+3. Env vars: `BACKEND_URL`, `BACKEND_IMAGE_URL`, `VITE_SOCKET_URL`, `VITE_LIVEKIT_URL` (point to your Render URL).
+4. Deploy. Then set `FRONTEND_URL` in Render to your Vercel URL.
 
 
-The platform uses a Docker-based deployment strategy. This method packages each part (frontend, backend services, and databases) i choose this to ensure they run the same way on the  laptop as they do on a live server.
 
-1. Containerization (Docker)
-Each microservice is bundled with its own environment and dependencies.
+## Links
 
-2. The Docker Host
-All containers are managed on a Docker Host, which acts as the engine running the entire ecosystem.
-
-The Web API containers communicate internally to handle artisan data, while the Client Apps connect through a central gateway.
-
-3. Database
-SQL Server containers store permanent data like artisan biographies and creative metadata.
-
-Redis will be  used for fast, temporary data storage  to ensure the site remains responsive even with many users.
-
-4. Continuous Deployment (CI/CD)
-Automated Pipeline: When code is updated on GitHub, it automatically triggers a new "build" of the container image.
-
-
+- **GitHub:** https://github.com/Amelieumutoni/MISSION-CAPSTONE.git
+- **Video:** https://drive.google.com/file/d/19s0CIDRpOvVHkvTgZ9d41xKGJQMh0EHT/view?usp=sharing
+**documentation** https://docs.google.com/document/d/1R3_EJOWCYuDQMLKY8pqIRKAYMvnxSx4yo0S60xgP080/edit?usp=sharing
