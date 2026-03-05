@@ -64,7 +64,7 @@ app.use(GlobalErrorHandler);
 async function bootstrap() {
   try {
     await sequelize.authenticate();
-    sequelize.sync({ alter: true });
+    sequelize.sync();
 
     const server = http.createServer(app);
 

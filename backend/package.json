@@ -2,7 +2,7 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
     "dev": "nodemon main.js",
     "build": "npx sequelize-cli db:migrate --env production && node main.js"
