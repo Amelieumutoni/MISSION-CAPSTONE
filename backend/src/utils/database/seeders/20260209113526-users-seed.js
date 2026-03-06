@@ -13,22 +13,6 @@ module.exports = {
           status: "ACTIVE",
           created_at: new Date(),
         },
-        {
-          name: "Author User",
-          email: "author@example.com",
-          password_hash: await bcrypt.hash("hashedpassword2", 10),
-          role: "AUTHOR",
-          status: "ACTIVE",
-          created_at: new Date(),
-        },
-        {
-          name: "Buyer User",
-          email: "buyer@example.com",
-          password_hash: await bcrypt.hash("hashedpassword3", 10),
-          role: "BUYER",
-          status: "ACTIVE",
-          created_at: new Date(),
-        },
       ],
       {},
     );

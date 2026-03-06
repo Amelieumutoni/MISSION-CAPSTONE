@@ -11,18 +11,6 @@ module.exports = {
     const profiles = [];
 
     userRows.forEach((user) => {
-      if (user.role === "AUTHOR") {
-        profiles.push({
-          user_id: user.user_id,
-          bio: "Professional weaver from the Northern Province, specialized in traditional Agaseke.",
-          location: "Musanze",
-          specialty: "Basketry",
-          years_experience: 15,
-          phone_contact: "+250780000001",
-          created_at: new Date(),
-          updated_at: new Date(),
-        });
-      } else {
         profiles.push({
           user_id: user.user_id,
           bio: "Art enthusiast and researcher interested in Rwandan heritage.",
@@ -33,7 +21,6 @@ module.exports = {
           created_at: new Date(),
           updated_at: new Date(),
         });
-      }
     });
 
     return queryInterface.bulkInsert("profiles", profiles);
