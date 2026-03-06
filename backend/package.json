@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "dev": "nodemon main.js",
-    "build": "npm install && npx sequelize-cli db:migrate --env production && npx sequelize-cli db:seed:all",
+    "build": "npm install && npx sequelize-cli db:migrate --env production && npx sequelize-cli db:seed:all --env production",
     "start": "node main.js"
   },
   "keywords": [],
