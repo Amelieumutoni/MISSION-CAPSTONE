@@ -14,7 +14,7 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: "http://localhost:5000/api",
+      url: "https://mission-capstone-zn0f.onrender.com",
       description: "Development server",
     },
   ],

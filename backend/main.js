@@ -25,7 +25,7 @@ const {
 // used middlewares
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "https://mission-capstone-z7td.vercel.app",
     credentials: true,
   }),
 );
@@ -71,7 +71,7 @@ async function bootstrap() {
     // 2. Initialize Socket.io
     const io = new Server(server, {
       cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:5173",
+        origin: process.env.FRONTEND_URL || "https://mission-capstone-z7td.vercel.app",
         methods: ["GET", "POST"],
         credentials: true,
       },
