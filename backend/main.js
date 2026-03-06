@@ -94,4 +94,13 @@ async function bootstrap() {
   }
 }
 
+
+if (process.env.NODE_ENV === 'production') {
+  const { exec } = require('child_process');
+  exec('npx sequelize-cli db:seed:all --env production', (err, stdout, stderr) => {
+    if (err) console.error("Seed error:", err);
+    console.log("Seed output:", stdout);
+  });
+}
+
 bootstrap();
