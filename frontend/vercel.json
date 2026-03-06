@@ -5,10 +5,10 @@
       "source": "/api/(.*)",
       "destination": "https://mission-capstone-zn0f.onrender.com/api/$1"
     },
-    {
-      "source": "/image/(.*)",
-      "destination": "https://mission-capstone-zn0f.onrender.com/image/$1"
-    },
+{
+  "source": "/image/(.*)",
+  "destination": "https://mission-capstone-zn0f.onrender.com/$1"
+},
     {
       "source": "/socket.io/(.*)",
       "destination": "https://mission-capstone-zn0f.onrender.com/socket.io/$1"
