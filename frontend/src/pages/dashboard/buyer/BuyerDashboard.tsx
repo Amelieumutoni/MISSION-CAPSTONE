@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { OrderService } from "@/api/services/orderService";
 import NotificationService from "@/api/services/notificationSerivce";
-import { confirmDelivery } from "@/api/services/shipmentService"; // 👈 import shipment service
+import { confirmDelivery } from "@/api/services/shipmentService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,6 @@ import {
   Trash2,
   MailOpen,
   AlertTriangle,
-  ArrowRight,
-  Truck,
-  MapPin,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BuyerProfileSection from "@/components/dashboard/buyer/UpdateProfile";
@@ -60,7 +57,6 @@ export default function BuyerDashboard() {
     });
   };
 
-  // Notification Handlers
   const handleMarkAsRead = async (id) => {
     try {
       await NotificationService.markAsRead(id);
@@ -84,7 +80,6 @@ export default function BuyerDashboard() {
     }
   };
 
-  // Shipment confirmation handler
   const handleConfirmDelivery = async (orderId) => {
     try {
       await confirmDelivery(orderId);
@@ -98,6 +93,7 @@ export default function BuyerDashboard() {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  // Sidebar nav items (desktop only)
   const navItems = [
     { id: "orders", label: "My Collections", icon: <ShoppingBag size={18} /> },
     {
@@ -110,6 +106,26 @@ export default function BuyerDashboard() {
     { id: "settings", label: "Account Settings", icon: <Settings size={18} /> },
   ];
 
+  // Bottom tab bar items (mobile only) — 4 sections + logout as 5th tab
+  // No top header or drawer added — the existing site Navbar already handles that.
+  const bottomTabs = [
+    { id: "orders", label: "Orders", icon: <ShoppingBag size={20} /> },
+    {
+      id: "notifications",
+      label: "Alerts",
+      icon: <Bell size={20} />,
+      count: unreadCount,
+    },
+    { id: "profile", label: "Profile", icon: <User size={20} /> },
+    { id: "settings", label: "Settings", icon: <Settings size={20} /> },
+    {
+      id: "__logout__",
+      label: "Sign Out",
+      icon: <LogOut size={20} />,
+      isLogout: true,
+    },
+  ];
+
   const filteredNotifs = notifications.filter((n) => {
     if (filter === "UNREAD") return !n.is_read;
     return true;
@@ -117,9 +133,8 @@ export default function BuyerDashboard() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      {/* --- SIDE NAVIGATION (unchanged) --- */}
+      {/* ── Desktop sidebar ── */}
       <aside className="w-64 border-r border-slate-100 hidden md:flex flex-col sticky top-0 h-screen">
-        {/* ... same as before ... */}
         <div className="p-8 border-b border-slate-50">
           <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-400">
             Buyer Portal
@@ -159,17 +174,66 @@ export default function BuyerDashboard() {
         </div>
       </aside>
 
-      {/* --- MAIN CONTENT AREA --- */}
-      <main className="flex-1 p-8 lg:p-12 overflow-y-auto text-slate-900">
+      {/* ── Mobile: bottom tab bar only ──
+          The existing Navbar already provides the top bar and hamburger menu on mobile.
+          We only add a bottom tab strip so users can switch dashboard sections
+          and reach Sign Out — no duplicate headers or drawers. ── */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-100 flex"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        {bottomTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => {
+              if ((tab as any).isLogout) {
+                handleLogout();
+              } else {
+                setActiveSection(tab.id);
+              }
+            }}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 relative transition-colors ${
+              (tab as any).isLogout
+                ? "text-rose-400 active:text-rose-600"
+                : activeSection === tab.id
+                  ? "text-slate-900"
+                  : "text-slate-400"
+            }`}
+          >
+            {/* Active indicator line */}
+            {!(tab as any).isLogout && activeSection === tab.id && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-slate-900" />
+            )}
+
+            {/* Icon with optional unread badge */}
+            <span className="relative">
+              {tab.icon}
+              {(tab as any).count > 0 && (
+                <span className="absolute -top-1 -right-1.5 bg-rose-500 text-white text-[7px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">
+                  {(tab as any).count}
+                </span>
+              )}
+            </span>
+
+            <span className="text-[8px] uppercase tracking-wider font-bold leading-none">
+              {tab.label}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Main content ──
+          pb-24 on mobile clears the bottom tab bar ── */}
+      <main className="flex-1 p-4 pb-24 md:p-8 lg:p-12 overflow-y-auto text-slate-900">
         <div className="max-w-5xl mx-auto space-y-10">
-          {/* COLLECTIONS SECTION with shipment details */}
+          {/* COLLECTIONS SECTION */}
           {activeSection === "orders" && (
             <>
               <header className="flex flex-col gap-2">
-                <h1 className="text-4xl font-serif font-bold text-slate-900">
+                <h1 className="text-3xl md:text-4xl font-serif font-bold text-slate-900">
                   My Collections
                 </h1>
-                <p className="text-slate-500 font-sans tracking-wide">
+                <p className="text-slate-500 font-sans tracking-wide text-sm">
                   Manage your orders and track shipments.
                 </p>
               </header>
@@ -220,7 +284,7 @@ export default function BuyerDashboard() {
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                           {orders.map((order) => {
-                            const shipment = order.shipment; // assuming shipment relation exists
+                            const shipment = order.shipment;
                             return (
                               <tr
                                 key={order.order_id}
@@ -260,11 +324,7 @@ export default function BuyerDashboard() {
                                 </td>
                                 <td className="px-6 py-4">
                                   {shipment?.tracking_number ? (
-                                    <p
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-xs text-blue-600 underline underline-offset-2"
-                                    >
+                                    <p className="text-xs text-blue-600 underline underline-offset-2">
                                       {shipment.tracking_number}
                                     </p>
                                   ) : (
@@ -304,16 +364,15 @@ export default function BuyerDashboard() {
             </>
           )}
 
-          {/* NOTIFICATIONS SECTION (unchanged) */}
+          {/* NOTIFICATIONS SECTION */}
           {activeSection === "notifications" && (
             <div className="space-y-8">
-              {/* ... same as before ... */}
               <header className="flex justify-between items-end">
                 <div>
-                  <h1 className="text-4xl font-serif font-bold text-slate-900">
+                  <h1 className="text-3xl md:text-4xl font-serif font-bold text-slate-900">
                     Notifications
                   </h1>
-                  <p className="text-slate-500 font-sans tracking-wide">
+                  <p className="text-slate-500 font-sans tracking-wide text-sm">
                     Stay updated on your activity.
                   </p>
                 </div>
@@ -322,7 +381,11 @@ export default function BuyerDashboard() {
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
-                      className={`text-[10px] font-mono tracking-widest transition-all ${filter === f ? "text-slate-900 border-b border-slate-900 pb-1" : "text-slate-400"}`}
+                      className={`text-[10px] font-mono tracking-widest transition-all ${
+                        filter === f
+                          ? "text-slate-900 border-b border-slate-900 pb-1"
+                          : "text-slate-400"
+                      }`}
                     >
                       {f}
                     </button>
@@ -343,7 +406,9 @@ export default function BuyerDashboard() {
                   filteredNotifs.map((notif) => (
                     <div
                       key={notif.notification_id}
-                      className={`flex items-center justify-between py-6 border-b border-slate-50 group ${!notif.is_read ? "bg-slate-50/50 -mx-4 px-4" : ""}`}
+                      className={`flex items-center justify-between py-6 border-b border-slate-50 group ${
+                        !notif.is_read ? "bg-slate-50/50 -mx-4 px-4" : ""
+                      }`}
                     >
                       <div className="flex gap-4 items-start">
                         {notif.priority === "high" ? (
@@ -353,12 +418,16 @@ export default function BuyerDashboard() {
                           />
                         ) : (
                           <div
-                            className={`w-1.5 h-1.5 rounded-full mt-2 ${notif.is_read ? "bg-slate-200" : "bg-slate-900"}`}
+                            className={`w-1.5 h-1.5 rounded-full mt-2 ${
+                              notif.is_read ? "bg-slate-200" : "bg-slate-900"
+                            }`}
                           />
                         )}
                         <div>
                           <h3
-                            className={`text-sm tracking-tight ${!notif.is_read ? "font-bold" : "text-slate-600"}`}
+                            className={`text-sm tracking-tight ${
+                              !notif.is_read ? "font-bold" : "text-slate-600"
+                            }`}
                           >
                             {notif.title}
                           </h3>
@@ -367,13 +436,14 @@ export default function BuyerDashboard() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Always tappable on mobile, hover-reveal on desktop */}
+                      <div className="flex items-center gap-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         {!notif.is_read && (
                           <button
                             onClick={() =>
                               handleMarkAsRead(notif.notification_id)
                             }
-                            className="text-slate-400 hover:text-slate-900"
+                            className="text-slate-400 hover:text-slate-900 p-1"
                           >
                             <MailOpen size={16} />
                           </button>
@@ -382,7 +452,7 @@ export default function BuyerDashboard() {
                           onClick={() =>
                             handleDeleteNotif(notif.notification_id)
                           }
-                          className="text-slate-400 hover:text-rose-600"
+                          className="text-slate-400 hover:text-rose-600 p-1"
                         >
                           <Trash2 size={16} />
                         </button>
