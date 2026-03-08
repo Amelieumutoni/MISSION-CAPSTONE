@@ -10,6 +10,7 @@ import {
   Lock,
   ChevronDown,
   Check,
+  ChevronUp,
 } from "lucide-react";
 import ArtworkService from "@/api/services/artworkService";
 import { toast } from "sonner";
@@ -26,6 +27,19 @@ interface Artwork {
   status: "AVAILABLE" | "SOLD" | "ARCHIVED";
 }
 
+// ── Hook: detect mobile (< 1024px) ──────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 1024 : false,
+  );
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
 export default function ShopPage() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +48,13 @@ export default function ShopPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
 
+  // Mobile bottom-sheet: "peek" shows a compact bar, "open" expands fully
+  const [sheetState, setSheetState] = useState<"peek" | "open">("peek");
+
   const categoryRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef<number | null>(null);
+
   const navigate = useNavigate();
   const { user } = useAuth();
   const {
@@ -45,6 +65,7 @@ export default function ShopPage() {
     getCartTotal,
     clearCart,
   } = useCart();
+  const isMobile = useIsMobile();
 
   const baseUrl = import.meta.env.BACKEND_IMAGE_URL || "/image";
 
@@ -53,6 +74,18 @@ export default function ShopPage() {
       cart.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0),
     [cart],
   );
+
+  // Lock body scroll when mobile sheet is open
+  useEffect(() => {
+    if (isMobile && cartOpen && sheetState === "open") {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobile, cartOpen, sheetState]);
 
   // Close category dropdown on outside click
   useEffect(() => {
@@ -100,7 +133,6 @@ export default function ShopPage() {
     navigate("/cart");
   };
 
-  // Unique categories derived from loaded artworks
   const categories = useMemo(() => {
     const techs = artworks
       .map((a) => a.technique)
@@ -109,7 +141,6 @@ export default function ShopPage() {
     return ["ALL", ...Array.from(new Set(techs))];
   }, [artworks]);
 
-  // Single memo for filtered results — search and category applied together
   const filteredArtworks = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return artworks.filter((work) => {
@@ -126,13 +157,246 @@ export default function ShopPage() {
   const handleClearSearch = () => setSearchQuery("");
   const handleClearFilter = () => setActiveFilter("ALL");
 
+  // ── Drag-to-dismiss on mobile sheet ─────────────────────────────────────
+  const handleDragStart = (clientY: number) => {
+    dragStartY.current = clientY;
+  };
+  const handleDragEnd = (clientY: number) => {
+    if (dragStartY.current === null) return;
+    const delta = clientY - dragStartY.current;
+    if (delta > 60) {
+      // dragged down significantly
+      if (sheetState === "open") setSheetState("peek");
+      else setCartOpen(false);
+    } else if (delta < -40) {
+      // dragged up
+      setSheetState("open");
+    }
+    dragStartY.current = null;
+  };
+
+  // ── Mobile bottom sheet ──────────────────────────────────────────────────
+  const MobileCartSheet = () => {
+    if (!cartOpen && totalItems === 0) return null;
+
+    // Show a tiny persistent tab when cart has items but sheet is closed
+    if (!cartOpen) {
+      return (
+        <div
+          className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <button
+            onClick={() => {
+              setCartOpen(true);
+              setSheetState("peek");
+            }}
+            className="w-full bg-slate-900 text-white flex items-center justify-between px-6 py-4 shadow-2xl"
+          >
+            <div className="flex items-center gap-3">
+              <ShoppingCart size={18} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">
+                View Cart
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="font-mono text-sm font-bold">
+                ${getCartTotal().toLocaleString()}
+              </span>
+              <span className="bg-white text-slate-900 text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center">
+                {totalItems}
+              </span>
+            </div>
+          </button>
+        </div>
+      );
+    }
+
+    const isOpen = sheetState === "open";
+
+    return (
+      <>
+        {/* Backdrop — only when fully open */}
+        {isOpen && (
+          <div
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"
+            onClick={() => setSheetState("peek")}
+          />
+        )}
+
+        {/* Bottom sheet */}
+        <div
+          ref={sheetRef}
+          className="fixed left-0 right-0 bottom-0 z-50 lg:hidden bg-white shadow-2xl flex flex-col"
+          style={{
+            height: isOpen ? "85dvh" : "auto",
+            maxHeight: "85dvh",
+            borderTopLeftRadius: "16px",
+            borderTopRightRadius: "16px",
+            transition: "height 0.35s cubic-bezier(0.32,0.72,0,1)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}
+          // Touch drag support
+          onTouchStart={(e) => handleDragStart(e.touches[0].clientY)}
+          onTouchEnd={(e) => handleDragEnd(e.changedTouches[0].clientY)}
+        >
+          {/* Drag handle + header */}
+          <div
+            className="flex-shrink-0 cursor-grab active:cursor-grabbing"
+            onMouseDown={(e) => handleDragStart(e.clientY)}
+            onMouseUp={(e) => handleDragEnd(e.clientY)}
+          >
+            {/* Pill handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-slate-300" />
+            </div>
+
+            {/* Header row */}
+            <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() =>
+                    isOpen ? setSheetState("peek") : setSheetState("open")
+                  }
+                  className="p-1.5 hover:bg-slate-100 transition-colors rounded"
+                >
+                  {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+                </button>
+                <div>
+                  <h2 className="text-base font-serif font-bold text-slate-900">
+                    Your Cart
+                  </h2>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                    {totalItems} {totalItems === 1 ? "Piece" : "Pieces"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {cart.length > 0 && (
+                  <button
+                    onClick={clearCart}
+                    className="text-[9px] uppercase tracking-widest font-bold text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+                <button
+                  onClick={() => setCartOpen(false)}
+                  className="p-1.5 hover:bg-slate-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Peek summary row (visible only in peek mode) */}
+            {!isOpen && cart.length > 0 && (
+              <div
+                className="px-6 py-3 flex items-center gap-3 overflow-x-auto scrollbar-none"
+                onClick={() => setSheetState("open")}
+              >
+                {cart.slice(0, 4).map((item: any) => {
+                  const src = item.main_image?.startsWith("http")
+                    ? item.main_image
+                    : `${baseUrl}${item.main_image}`;
+                  return (
+                    <div
+                      key={item.artwork_id}
+                      className="w-12 h-12 flex-shrink-0 border border-slate-200 overflow-hidden bg-slate-50"
+                    >
+                      <img
+                        src={src}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  );
+                })}
+                {cart.length > 4 && (
+                  <div className="w-12 h-12 flex-shrink-0 border border-slate-200 bg-slate-100 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-slate-500">
+                      +{cart.length - 4}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0 ml-2">
+                  <p className="text-xs font-bold text-slate-900 font-mono">
+                    ${getCartTotal().toLocaleString()}
+                  </p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                    Tap to expand
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Empty state in peek */}
+            {!isOpen && cart.length === 0 && (
+              <div className="px-6 py-4 text-center">
+                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                  Cart is empty
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Scrollable cart items — only in open state */}
+          {isOpen && (
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+              {cart.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center opacity-30 py-16">
+                  <ShoppingCart size={40} strokeWidth={1} />
+                  <p className="mt-3 text-[10px] uppercase font-bold tracking-widest">
+                    Cart is empty
+                  </p>
+                </div>
+              ) : (
+                cart.map((item: any) => (
+                  <CartItem
+                    key={item.artwork_id}
+                    item={item}
+                    baseUrl={baseUrl}
+                    onRemove={() => removeFromCart(item.artwork_id)}
+                    onUpdateQuantity={(qty) =>
+                      updateQuantity(item.artwork_id, qty)
+                    }
+                  />
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Checkout footer — always visible when open and cart has items */}
+          {isOpen && cart.length > 0 && (
+            <div className="flex-shrink-0 px-4 py-4 bg-slate-50 border-t border-slate-200">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Total
+                </span>
+                <span className="text-2xl font-mono font-bold">
+                  ${getCartTotal().toLocaleString()}
+                </span>
+              </div>
+              <Button
+                onClick={handleCheckout}
+                className="w-full bg-slate-900 py-6 rounded-none text-[10px] uppercase tracking-[0.2em] font-bold"
+              >
+                {!user && <Lock size={12} className="mr-2" />}
+                Proceed to Checkout
+              </Button>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
+
   return (
     <>
       {/* ── Sticky nav ── */}
       <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center gap-3 py-4">
-            {/* Search input */}
             <div className="relative flex items-center gap-3 bg-slate-50 px-4 py-2.5 flex-1 max-w-md focus-within:ring-1 ring-slate-400 transition-all">
               <Search size={16} className="text-slate-400 flex-shrink-0" />
               <input
@@ -152,7 +416,6 @@ export default function ShopPage() {
               )}
             </div>
 
-            {/* Category filter — dropdown instead of overflowing pill row */}
             <div ref={categoryRef} className="relative flex-shrink-0">
               <button
                 onClick={() => setCategoryOpen((p) => !p)}
@@ -194,7 +457,6 @@ export default function ShopPage() {
               )}
             </div>
 
-            {/* Active filter chips — only when something is active */}
             {(searchQuery || activeFilter !== "ALL") && (
               <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap">
                 {searchQuery && (
@@ -226,8 +488,13 @@ export default function ShopPage() {
         </div>
       </nav>
 
-      {/* ── Main content ── */}
-      <main className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
+      {/* ── Main content (add bottom padding on mobile so cart bar doesn't overlap) ── */}
+      <main
+        className="max-w-7xl mx-auto px-4 lg:px-8 py-12"
+        style={{
+          paddingBottom: isMobile && totalItems > 0 ? "80px" : undefined,
+        }}
+      >
         <header className="mb-12">
           <h1 className="text-6xl font-serif tracking-tighter text-slate-900">
             Market.
@@ -252,9 +519,15 @@ export default function ShopPage() {
                 key={work.artwork_id}
                 work={work}
                 baseUrl={baseUrl}
+                isMobile={isMobile}
                 onBuy={() => {
                   addToCart(work);
                   toast.success(`${work.title} added to cart`);
+                  // Auto-open sheet on mobile when first item added
+                  if (isMobile) {
+                    setCartOpen(true);
+                    setSheetState("peek");
+                  }
                 }}
               />
             ))}
@@ -279,14 +552,14 @@ export default function ShopPage() {
         )}
       </main>
 
-      {/* ── Cart sidebar ── */}
-      {cartOpen && (
+      {/* ── Desktop: sidebar cart ── */}
+      {!isMobile && cartOpen && (
         <>
           <div
             className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
             onClick={() => setCartOpen(false)}
           />
-          <div className="fixed right-0 top-0 h-full w-full lg:w-[450px] bg-white z-50 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="fixed right-0 top-0 h-full w-[450px] bg-white z-50 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             <div className="border-b border-slate-100 flex flex-col py-6 gap-y-4">
               <div className="px-8 flex justify-between items-center">
                 <div>
@@ -360,8 +633,8 @@ export default function ShopPage() {
         </>
       )}
 
-      {/* ── Floating cart button ── */}
-      {totalItems > 0 && (
+      {/* ── Desktop: floating cart button ── */}
+      {!isMobile && totalItems > 0 && (
         <button
           onClick={() => setCartOpen(true)}
           className="fixed bottom-8 right-8 z-40 bg-slate-900 text-white flex items-center gap-4 px-6 py-4 shadow-2xl hover:scale-105 transition-transform"
@@ -370,18 +643,25 @@ export default function ShopPage() {
           <span className="text-xs font-bold font-mono">{totalItems}</span>
         </button>
       )}
+
+      {/* ── Mobile: bottom sheet cart ── */}
+      {isMobile && <MobileCartSheet />}
     </>
   );
 }
+
+// ── Shared sub-components (unchanged) ───────────────────────────────────────
 
 function ShopCard({
   work,
   baseUrl,
   onBuy,
+  isMobile,
 }: {
   work: Artwork;
   baseUrl: string;
   onBuy: () => void;
+  isMobile: boolean;
 }) {
   const isSold = work.status === "SOLD";
   const imageSrc = work.main_image?.startsWith("http")
@@ -400,7 +680,21 @@ function ShopCard({
           <div className="absolute top-4 left-4 bg-slate-900 text-white px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest">
             Sold
           </div>
+        ) : isMobile ? (
+          /* On touch devices: always-visible button pinned to bottom of card */
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBuy();
+              }}
+              className="w-full bg-slate-900 text-white py-3 text-[10px] font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2 shadow-xl active:bg-slate-700 transition-colors"
+            >
+              Add <ShoppingCart size={14} />
+            </button>
+          </div>
         ) : (
+          /* On desktop: reveal on hover as before */
           <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
             <button
               onClick={(e) => {
