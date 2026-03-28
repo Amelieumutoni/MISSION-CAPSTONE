@@ -46,6 +46,9 @@ import NotificationsSection from "./pages/dashboard/NotificationsPage";
 import ArtistShipmentsPage from "./pages/dashboard/ShipmentPage";
 import ArchiveApplicationPage from "./pages/ArchivesApplicationPage";
 import AdminArchiveApplicationsPage from "./pages/dashboard/admin/ArchiveApplications";
+import TermsPage from "./pages/Terms";
+import ContactPage from "./pages/ContactUs";
+import AboutPage from "./pages/AboutUs";
 
 function DashboardIndex() {
   const { user } = useAuth();
@@ -76,6 +79,10 @@ export default function App() {
               <Route path="/artists" element={<ArtistsPage />} />
               <Route path="/artists/:id" element={<ArtistDetailPage />} />
               <Route path="/collections" element={<CollectionsPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/about-us" element={<AboutPage />} />
+
               <Route
                 path="/exhibitions/:id"
                 element={<ClassificationDetailPage />}

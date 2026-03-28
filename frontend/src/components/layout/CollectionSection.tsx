@@ -43,9 +43,9 @@ export default function CollectionsSection() {
 
   if (loading) {
     return (
-      <section className="px-8 py-24 bg-white">
+      <section className="px-8 py-24 bg-slate-900 text-white">
         <div className="mb-20 text-center">
-          <h3 className="text-[10px] uppercase tracking-[0.5em] text-slate-400 mb-3 font-bold">
+          <h3 className="text-[10px] uppercase tracking-[0.5em] text-slate-500 mb-3 font-bold">
             Curated By Experts
           </h3>
           <h4 className="text-6xl font-serif tracking-tight">Collections</h4>
@@ -53,11 +53,11 @@ export default function CollectionsSection() {
         <div className="grid md:grid-cols-2 gap-12 mb-12">
           {[1, 2].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="aspect-16/10 bg-slate-200 mb-8" />
-              <div className="h-8 bg-slate-200 w-3/4 mb-3" />
-              <div className="h-4 bg-slate-200 w-1/2 mb-4" />
-              <div className="h-12 bg-slate-200 w-full mb-6" />
-              <div className="h-4 bg-slate-200 w-24" />
+              <div className="aspect-16/10 bg-slate-800 mb-8" />
+              <div className="h-8 bg-slate-800 w-3/4 mb-3" />
+              <div className="h-4 bg-slate-800 w-1/2 mb-4" />
+              <div className="h-12 bg-slate-800 w-full mb-6" />
+              <div className="h-4 bg-slate-800 w-24" />
             </div>
           ))}
         </div>
@@ -66,14 +66,14 @@ export default function CollectionsSection() {
   }
 
   return (
-    <section className="px-8 py-24 bg-white">
+    <section className="px-8 py-24 bg-slate-900 text-white border-t border-white/5">
       <div className="mb-20 text-center">
-        <h3 className="text-[10px] uppercase tracking-[0.5em] text-slate-400 mb-3 font-bold">
+        <h3 className="text-[10px] uppercase tracking-[0.5em] text-slate-500 mb-3 font-bold">
           Curated By Experts
         </h3>
         <h4 className="text-6xl font-serif tracking-tight">Collections</h4>
         {archivedExhibitions.length > 0 && (
-          <p className="text-sm text-slate-500 mt-4">
+          <p className="text-sm text-slate-400 mt-4">
             Explore {archivedExhibitions.length} archived exhibitions
           </p>
         )}
@@ -105,8 +105,8 @@ export default function CollectionsSection() {
       )}
 
       {archivedExhibitions.length === 0 && (
-        <div className="text-center py-20 border-2 border-dashed border-slate-100">
-          <Archive className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+        <div className="text-center py-20 border-2 border-dashed border-white/10">
+          <Archive className="w-12 h-12 mx-auto mb-4 text-slate-500" />
           <p className="text-slate-400 text-sm">
             No archived exhibitions available
           </p>
@@ -141,7 +141,7 @@ function ArchivedExhibitionCard({
       <div
         className={`${
           compact ? "aspect-4/3" : "aspect-16/10"
-        } bg-slate-100 mb-8 overflow-hidden relative shadow-sm`}
+        } bg-slate-800 mb-8 overflow-hidden relative shadow-sm border border-white/5`}
       >
         <img
           src={bannerImage}
@@ -151,7 +151,7 @@ function ArchivedExhibitionCard({
 
         {/* Overlay Badges */}
         <div className="absolute top-6 left-6 flex gap-2">
-          <span className="px-4 py-2 bg-white/95 backdrop-blur-sm text-slate-900 text-[8px] font-black tracking-[0.3em] uppercase shadow-sm flex items-center gap-1">
+          <span className="px-4 py-2 bg-black/80 backdrop-blur-sm text-white text-[8px] font-black tracking-[0.3em] uppercase shadow-sm flex items-center gap-1">
             <Archive className="w-3 h-3" />
             ARCHIVED
           </span>
@@ -176,7 +176,7 @@ function ArchivedExhibitionCard({
 
       <div className="max-w-md">
         <h5
-          className={`${compact ? "text-xl" : "text-3xl"} font-serif mb-3 tracking-tight`}
+          className={`${compact ? "text-xl" : "text-3xl"} font-serif mb-3 tracking-tight text-white`}
         >
           {exhibition.title}
         </h5>
@@ -184,7 +184,7 @@ function ArchivedExhibitionCard({
         <div className="flex items-center gap-4 mb-4">
           <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-medium">
             Curated by{" "}
-            <span className="text-slate-900">
+            <span className="text-white">
               {exhibition.author?.name || "Unknown Artist"}
             </span>
           </p>
@@ -197,12 +197,12 @@ function ArchivedExhibitionCard({
         </div>
 
         {!compact && (
-          <p className="text-sm text-slate-500 leading-relaxed mb-6 italic">
+          <p className="text-sm text-slate-400 leading-relaxed mb-6 italic">
             "{exhibition.description || "No description available"}"
           </p>
         )}
 
-        <div className="inline-flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest border-b border-black pb-1 group-hover:gap-4 transition-all">
+        <div className="inline-flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest border-b border-white pb-1 text-white group-hover:gap-4 transition-all">
           View Archive <ChevronRight className="w-3 h-3" />
         </div>
       </div>

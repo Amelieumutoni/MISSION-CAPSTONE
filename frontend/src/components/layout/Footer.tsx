@@ -1,5 +1,3 @@
-import { Instagram, Twitter, Facebook, Youtube } from "lucide-react";
-
 export default function Footer() {
   return (
     <footer className="bg-white">
@@ -13,12 +11,6 @@ export default function Footer() {
             A digital sanctuary for Rwandan craftsmanship. Powered by heritage,
             documented for the future.
           </p>
-          <div className="flex gap-3">
-            <SocialIcon Icon={Instagram} href="#" />
-            <SocialIcon Icon={Twitter} href="#" />
-            <SocialIcon Icon={Facebook} href="#" />
-            <SocialIcon Icon={Youtube} href="#" />
-          </div>
         </div>
 
         {/* NAVIGATION COLUMNS - Pushed to the right */}
@@ -46,17 +38,15 @@ export default function Footer() {
             Company
           </h6>
           <nav className="flex flex-col gap-3">
-            {["About Us", "Contact", "Privacy", "Terms", "Copyright"].map(
-              (item) => (
-                <a
-                  key={item}
-                  href={`/${item.toLowerCase().replace(" ", "-")}`}
-                  className="text-xs text-slate-500 hover:text-slate-900 hover:pl-2 transition-all duration-300"
-                >
-                  {item}
-                </a>
-              ),
-            )}
+            {["About Us", "Contact", "Terms"].map((item) => (
+              <a
+                key={item}
+                href={`/${item.toLowerCase().replace(" ", "-")}`}
+                className="text-xs text-slate-500 hover:text-slate-900 hover:pl-2 transition-all duration-300"
+              >
+                {item}
+              </a>
+            ))}
           </nav>
         </div>
       </div>
@@ -68,24 +58,5 @@ export default function Footer() {
         </p>
       </div>
     </footer>
-  );
-}
-
-function SocialIcon({
-  Icon,
-  href,
-}: {
-  Icon: React.FC<React.SVGProps<SVGSVGElement>>;
-  href: string;
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="w-9 h-9 border border-slate-200 flex items-center justify-center cursor-pointer hover:border-slate-900 hover:bg-slate-900 hover:text-white transition-all duration-300"
-    >
-      <Icon className="w-3.5 h-3.5" />
-    </a>
   );
 }

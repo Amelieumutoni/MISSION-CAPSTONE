@@ -2,7 +2,7 @@ export default function StatItem({
   number,
   label,
 }: {
-  number: string;
+  number: any;
   label: string;
 }) {
   return (
