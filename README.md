@@ -204,4 +204,4 @@ This project uses **Vercel** and **render** for deployment.
 - **GitHub:** https://github.com/Amelieumutoni/MISSION-CAPSTONE.git
 - **Video:** https://drive.google.com/file/d/19s0CIDRpOvVHkvTgZ9d41xKGJQMh0EHT/view?usp=sharing
 - **documentation** https://docs.google.com/document/d/1R3_EJOWCYuDQMLKY8pqIRKAYMvnxSx4yo0S60xgP080/edit?usp=sharing
--**deployment link**https://mission-capstone-z7td.vercel.app/
+- **deployment link**https://mission-capstone-z7td.vercel.app/
